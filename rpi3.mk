@@ -38,6 +38,9 @@ LINUX_DTB		?= $(LINUX_PATH)/arch/arm64/boot/dts/broadcom/bcm2710-rpi-3-b.dtb
 MODULE_OUTPUT		?= $(ROOT)/module_output
 FIT_IMAGE		?= $(ROOT)/out/fit/image.fit
 
+BOOT_TARGET ?= $(ROOT)/out/boot
+BOOT_FS_FILE ?= $(ROOT)/out/boot.tar
+
 ################################################################################
 # Targets
 ################################################################################
@@ -46,7 +49,7 @@ all: benchmark-app
 clean: benchmark-app-clean
 endif
 all: arm-tf optee-os optee-client xtest u-boot u-boot-rpi-bin\
-	linux gen-pubkey u-boot-fit update_rootfs optee-examples
+	linux gen-pubkey u-boot-fit update_rootfs optee-examples archive-boot
 clean: arm-tf-clean busybox-clean u-boot-clean u-boot-rpi-bin-clean \
 	optee-os-clean optee-client-clean head-bin-clean \
 	optee-examples-clean
@@ -210,25 +213,30 @@ benchmark-app-clean: benchmark-app-clean-common
 .PHONY: filelist-tee
 filelist-tee: linux
 filelist-tee: filelist-tee-common
-	@echo "dir /usr/bin 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-	@echo "dir /boot 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-	@echo "file /boot/config.txt $(RPI3_BOOT_CONFIG) 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-	@echo "file /boot/image.fit $(FIT_IMAGE) 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-	@echo "file /boot/uboot.env $(RPI3_UBOOT_ENV) 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-	@echo "file /boot/u-boot-rpi.bin $(U-BOOT_RPI_BIN) 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-	@cd $(MODULE_OUTPUT) && find ! -path . -type d | sed 's/\.\(.*\)/dir \1 755 0 0/g' >> $(GEN_ROOTFS_FILELIST)
-	@cd $(MODULE_OUTPUT) && find -type f | sed "s|\.\(.*\)|file \1 $(MODULE_OUTPUT)\1 755 0 0|g" >> $(GEN_ROOTFS_FILELIST)
-	@echo "file /boot/bootcode.bin $(RPI3_STOCK_FW_PATH)/boot/bootcode.bin 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-	@echo "file /boot/COPYING.linux $(RPI3_STOCK_FW_PATH)/boot/COPYING.linux 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-	@echo "file /boot/fixup_cd.dat $(RPI3_STOCK_FW_PATH)/boot/fixup_cd.dat 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-	@echo "file /boot/fixup.dat $(RPI3_STOCK_FW_PATH)/boot/fixup.dat 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-	@echo "file /boot/fixup_db.dat $(RPI3_STOCK_FW_PATH)/boot/fixup_db.dat 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-	@echo "file /boot/fixup_x.dat $(RPI3_STOCK_FW_PATH)/boot/fixup_x.dat 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-	@echo "file /boot/LICENCE.broadcom $(RPI3_STOCK_FW_PATH)/boot/LICENCE.broadcom 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-	@echo "file /boot/start_cd.elf $(RPI3_STOCK_FW_PATH)/boot/start_cd.elf 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-	@echo "file /boot/start_db.elf $(RPI3_STOCK_FW_PATH)/boot/start_db.elf 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-	@echo "file /boot/start.elf $(RPI3_STOCK_FW_PATH)/boot/start.elf 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-	@echo "file /boot/start_x.elf $(RPI3_STOCK_FW_PATH)/boot/start_x.elf 755 0 0" >> $(GEN_ROOTFS_FILELIST)
+        @echo "dir /usr/bin 755 0 0" >> $(GEN_ROOTFS_FILELIST)
+        @cd $(MODULE_OUTPUT) && find ! -path . -type d | sed 's/\.\(.*\)/dir \1 755 0 0/g' >> $(GEN_ROOTFS_FILELIST)
+        @cd $(MODULE_OUTPUT) && find -type f | sed "s|\.\(.*\)|file \1 $(MODULE_OUTPUT)\1 755 0 0|g" >> $(GEN_ROOTFS_FILELIST)
+
+.PHONY: archive-boot
+archive-boot: u-boot-fit
+	mkdir $(BOOT_TARGET)
+	cd $(BOOT_TARGET) && \
+		ln -s $(RPI3_BOOT_CONFIG) && \
+		ln -s $(FIT_IMAGE) && \
+		ln -s $(RPI3_UBOOT_ENV) && \
+		ln -s $(U-BOOT_RPI_BIN) && \
+		ln -s $(RPI3_STOCK_FW_PATH)/boot/bootcode.bin && \
+		ln -s $(RPI3_STOCK_FW_PATH)/boot/COPYING.linux && \
+		ln -s $(RPI3_STOCK_FW_PATH)/boot/fixup_cd.dat && \
+		ln -s $(RPI3_STOCK_FW_PATH)/boot/fixup.dat && \
+		ln -s $(RPI3_STOCK_FW_PATH)/boot/fixup_db.dat && \
+		ln -s $(RPI3_STOCK_FW_PATH)/boot/fixup_x.dat && \
+		ln -s $(RPI3_STOCK_FW_PATH)/boot/LICENCE.broadcom && \
+		ln -s $(RPI3_STOCK_FW_PATH)/boot/start_cd.elf && \
+		ln -s $(RPI3_STOCK_FW_PATH)/boot/start_db.elf && \
+		ln -s $(RPI3_STOCK_FW_PATH)/boot/start.elf && \
+		ln -s $(RPI3_STOCK_FW_PATH)/boot/start_x.elf
+        tar -chvf $(BOOT_FS_FILE) $(BOOT_TARGET) --owner=0 --group=0 --mode=755
 
 .PHONY: update_rootfs
 update_rootfs: arm-tf u-boot
@@ -246,7 +254,7 @@ img-help:
 	@echo "   > p             # create primary"
 	@echo "   > 1             # make it the first partition"
 	@echo "   > <enter>       # use the default sector"
-	@echo "   > +32M          # create a boot partition with 32MB of space"
+	@echo "   > +64M          # create a boot partition with 64MB of space"
 	@echo "   > n             # create rootfs partition"
 	@echo "   > p"
 	@echo "   > 2"
@@ -264,9 +272,9 @@ img-help:
 	@echo "   $$ mkfs.vfat -F16 -n BOOT /dev/sdx1"
 	@echo "   $$ mkdir -p /media/boot"
 	@echo "   $$ mount /dev/sdx1 /media/boot"
-	@echo "   $$ cd /media"
-	@echo "   $$ gunzip -cd $(GEN_ROOTFS_PATH)/filesystem.cpio.gz | sudo cpio -idmv \"boot/*\""
-	@echo "   $$ umount boot"
+	@echo "   $$ cd /media/boot"
+	@echo "   $$ tar -xpvzf $(BOOT_FS_FILE)"
+	@echo "   $$ cd .. && umount boot"
 	@echo ""
 	@echo "run the following as root"
 	@echo "   $$ mkfs.ext4 -L rootfs /dev/sdx2"
