@@ -52,7 +52,8 @@ all: arm-tf optee-os optee-client xtest u-boot u-boot-rpi-bin\
 	linux gen-pubkey u-boot-fit update_rootfs optee-examples archive-boot
 clean: arm-tf-clean busybox-clean u-boot-clean u-boot-rpi-bin-clean \
 	optee-os-clean optee-client-clean head-bin-clean \
-	optee-examples-clean
+	optee-examples-clean gen-pubkey-clean u-boot-fit-clean \
+	archive-boot-clean
 
 include toolchain.mk
 
@@ -237,6 +238,9 @@ archive-boot: u-boot-fit
 		ln -s $(RPI3_STOCK_FW_PATH)/boot/start.elf && \
 		ln -s $(RPI3_STOCK_FW_PATH)/boot/start_x.elf
 	tar -chvf $(BOOT_FS_FILE) $(BOOT_TARGET) --owner=0 --group=0 --mode=755
+
+.PHONY: archive-boot-clean
+	rm -rf $(BOOT_TARGET) && rm -rf $(BOOT_FS_FILE)
 
 .PHONY: update_rootfs
 update_rootfs: arm-tf u-boot
