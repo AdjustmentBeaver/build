@@ -39,7 +39,7 @@ MODULE_OUTPUT		?= $(ROOT)/module_output
 FIT_IMAGE		?= $(ROOT)/out/fit/image.fit
 
 BOOT_TARGET ?= $(ROOT)/out/boot
-BOOT_FS_FILE ?= $(ROOT)/out/boot.tar
+BOOT_FS_FILE ?= $(ROOT)/out/boot.tar.gz
 
 ################################################################################
 # Targets
@@ -131,7 +131,7 @@ gen-pubkey-clean:
 
 u-boot-fit: u-boot $(LINUX_IMAGE) $(ARM_TF_BOOT) $(LINUX_DTB)
 	mkdir -p $(ROOT)/out/fit
-	cd $(ROOT)/out/fit && ln -s $(LINUX_IMAGE) && ln -s $(ARM_TF_BOOT) && ln -s $(LINUX_DTB) && ln -s $(RPI3_FIRMWARE_PATH)/rpi3_fit.its && cp $(LINUX_DTB) rpi3_pubkey.dtb
+	cd $(ROOT)/out/fit && ln -sf $(LINUX_IMAGE) && ln -sf $(ARM_TF_BOOT) && ln -sf $(LINUX_DTB) && ln -sf $(RPI3_FIRMWARE_PATH)/rpi3_fit.its && cp $(LINUX_DTB) rpi3_pubkey.dtb
 	cd $(ROOT)/out/fit && $(U-BOOT_PATH)/tools/mkimage -f rpi3_fit.its -K rpi3_pubkey.dtb -k keys -r image.fit
 
 u-boot-fit-clean:
@@ -223,22 +223,22 @@ filelist-tee: filelist-tee-common
 archive-boot: u-boot-fit
 	mkdir -p $(BOOT_TARGET)
 	cd $(BOOT_TARGET) && \
-		ln -s $(RPI3_BOOT_CONFIG) && \
-		ln -s $(FIT_IMAGE) && \
-		ln -s $(RPI3_UBOOT_ENV) && \
-		ln -s $(U-BOOT_RPI_BIN) && \
-		ln -s $(RPI3_STOCK_FW_PATH)/boot/bootcode.bin && \
-		ln -s $(RPI3_STOCK_FW_PATH)/boot/COPYING.linux && \
-		ln -s $(RPI3_STOCK_FW_PATH)/boot/fixup_cd.dat && \
-		ln -s $(RPI3_STOCK_FW_PATH)/boot/fixup.dat && \
-		ln -s $(RPI3_STOCK_FW_PATH)/boot/fixup_db.dat && \
-		ln -s $(RPI3_STOCK_FW_PATH)/boot/fixup_x.dat && \
-		ln -s $(RPI3_STOCK_FW_PATH)/boot/LICENCE.broadcom && \
-		ln -s $(RPI3_STOCK_FW_PATH)/boot/start_cd.elf && \
-		ln -s $(RPI3_STOCK_FW_PATH)/boot/start_db.elf && \
-		ln -s $(RPI3_STOCK_FW_PATH)/boot/start.elf && \
-		ln -s $(RPI3_STOCK_FW_PATH)/boot/start_x.elf
-	tar -chvf $(BOOT_FS_FILE) $(BOOT_TARGET)/* --owner=0 --group=0 --mode=755
+		ln -sf $(RPI3_BOOT_CONFIG) && \
+		ln -sf $(FIT_IMAGE) && \
+		ln -sf $(RPI3_UBOOT_ENV) && \
+		ln -sf $(U-BOOT_RPI_BIN) && \
+		ln -sf $(RPI3_STOCK_FW_PATH)/boot/bootcode.bin && \
+		ln -sf $(RPI3_STOCK_FW_PATH)/boot/COPYING.linux && \
+		ln -sf $(RPI3_STOCK_FW_PATH)/boot/fixup_cd.dat && \
+		ln -sf $(RPI3_STOCK_FW_PATH)/boot/fixup.dat && \
+		ln -sf $(RPI3_STOCK_FW_PATH)/boot/fixup_db.dat && \
+		ln -sf $(RPI3_STOCK_FW_PATH)/boot/fixup_x.dat && \
+		ln -sf $(RPI3_STOCK_FW_PATH)/boot/LICENCE.broadcom && \
+		ln -sf $(RPI3_STOCK_FW_PATH)/boot/start_cd.elf && \
+		ln -sf $(RPI3_STOCK_FW_PATH)/boot/start_db.elf && \
+		ln -sf $(RPI3_STOCK_FW_PATH)/boot/start.elf && \
+		ln -sf $(RPI3_STOCK_FW_PATH)/boot/start_x.elf
+	cd $(ROOT)/out && tar -chvzf $(BOOT_FS_FILE) boot --owner=0 --group=0 --mode=755
 
 .PHONY: archive-boot-clean
 archive-boot-clean:
