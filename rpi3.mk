@@ -36,6 +36,7 @@ OPTEE_OS_PAGER			?= $(OPTEE_OS_PATH)/out/arm/core/tee-pager.bin
 LINUX_IMAGE		?= $(LINUX_PATH)/arch/arm64/boot/Image
 LINUX_DTB		?= $(LINUX_PATH)/arch/arm64/boot/dts/broadcom/bcm2710-rpi-3-b.dtb
 MODULE_OUTPUT		?= $(ROOT)/module_output
+FIT_IMAGE		?= $(ROOT)/out/fit/image.fit
 
 ################################################################################
 # Targets
@@ -125,8 +126,8 @@ gen-pubkey-clean:
 
 u-boot-fit:
 	mkdir $(ROOT)/out/fit
-	cd $(ROOT)/out/fit && ln -s $(LINUX_IMAGE) && ln -s $(ARM_TF_BOOT) && ln -s $(LINUX_DTB) && cp $(LINUX_DTB) rpi3_pubkey.dtb
-	cd $(ROOT)/out/fit && $(U-BOOT_PATH)/tools/mkimage -f $(RPI3_FIRMWARE_PATH)/rpi3_fit.its -K rpi3_pubkey.dtb -k keys -r image.fit
+	cd $(ROOT)/out/fit && ln -s $(LINUX_IMAGE) && ln -s $(ARM_TF_BOOT) && ln -s $(LINUX_DTB) && ln -s $(RPI3_FIRMWARE_PATH)/rpi3_fit.its && cp $(LINUX_DTB) rpi3_pubkey.dtb
+	cd $(ROOT)/out/fit && $(U-BOOT_PATH)/tools/mkimage -f rpi3_fit.its -K rpi3_pubkey.dtb -k keys -r image.fit
 
 u-boot-fit-clean:
 	rm -rf $(ROOT)/out/fit
@@ -215,6 +216,7 @@ filelist-tee: filelist-tee-common
 	@echo "file /boot/config.txt $(RPI3_BOOT_CONFIG) 755 0 0" >> $(GEN_ROOTFS_FILELIST)
 	@echo "file /boot/Image $(LINUX_IMAGE) 755 0 0" >> $(GEN_ROOTFS_FILELIST)
 	@echo "file /boot/optee.bin $(ARM_TF_BOOT) 755 0 0" >> $(GEN_ROOTFS_FILELIST)
+	@echo "file /boot/image.fit $(FIT_IMAGE) 755 0 0" >> $(GEN_ROOTFS_FILELIST)
 	@echo "file /boot/uboot.env $(RPI3_UBOOT_ENV) 755 0 0" >> $(GEN_ROOTFS_FILELIST)
 	@echo "file /boot/u-boot-rpi.bin $(U-BOOT_RPI_BIN) 755 0 0" >> $(GEN_ROOTFS_FILELIST)
 	@cd $(MODULE_OUTPUT) && find ! -path . -type d | sed 's/\.\(.*\)/dir \1 755 0 0/g' >> $(GEN_ROOTFS_FILELIST)
