@@ -4,17 +4,18 @@
 ROOT				?= $(CURDIR)/..
 TOOLCHAIN_ROOT 			?= $(ROOT)/toolchains
 
+LINARO_TOOLCHAIN_RELEASE ?= 7.2-2017.11
 LINARO_TOOLCHAIN_VERSION ?= 7.2.1-2017.11
 
 AARCH32_PATH 			?= $(TOOLCHAIN_ROOT)/aarch32
 AARCH32_CROSS_COMPILE 		?= $(AARCH32_PATH)/bin/arm-linux-gnueabihf-
 AARCH32_GCC_VERSION 		?= gcc-linaro-$(LINARO_TOOLCHAIN_VERSION)-x86_64_arm-linux-gnueabihf
-SRC_AARCH32_GCC 		?= https://releases.linaro.org/components/toolchain/binaries/$(LINARO_TOOLCHAIN_VERSION)/arm-linux-gnueabihf/${AARCH32_GCC_VERSION}.tar.xz
+SRC_AARCH32_GCC 		?= https://releases.linaro.org/components/toolchain/binaries/$(LINARO_TOOLCHAIN_RELEASE)/arm-linux-gnueabihf/${AARCH32_GCC_VERSION}.tar.xz
 
 AARCH64_PATH 			?= $(TOOLCHAIN_ROOT)/aarch64
 AARCH64_CROSS_COMPILE 		?= $(AARCH64_PATH)/bin/aarch64-linux-gnu-
 AARCH64_GCC_VERSION 		?= gcc-linaro-$(LINARO_TOOLCHAIN_VERSION)-x86_64_aarch64-linux-gnu
-SRC_AARCH64_GCC 		?= https://releases.linaro.org/components/toolchain/binaries/$(LINARO_TOOLCHAIN_VERSION)/aarch64-linux-gnu/${AARCH64_GCC_VERSION}.tar.xz
+SRC_AARCH64_GCC 		?= https://releases.linaro.org/components/toolchain/binaries/$(LINARO_TOOLCHAIN_RELEASE)/aarch64-linux-gnu/${AARCH64_GCC_VERSION}.tar.xz
 
 # Due to relocation error on the 96board edk forest, let's keep the old
 # toolchain for a while.
