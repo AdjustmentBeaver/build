@@ -45,7 +45,7 @@ all: benchmark-app
 clean: benchmark-app-clean
 endif
 all: arm-tf optee-os optee-client xtest u-boot u-boot-rpi-bin\
-	linux update_rootfs optee-examples
+	linux gen-pubkey u-boot-fit update_rootfs optee-examples
 clean: arm-tf-clean busybox-clean u-boot-clean u-boot-rpi-bin-clean \
 	optee-os-clean optee-client-clean head-bin-clean \
 	optee-examples-clean
@@ -114,6 +114,17 @@ $(RPI3_UBOOT_ENV): $(RPI3_UBOOT_ENV_TXT) u-boot
 
 u-boot-env-clean:
 	rm -f $(RPI3_UBOOT_ENV)
+
+gen-pubkey: mkdir $(ROOT)/out/keys && cd $(ROOT)/out/keys
+	openssl genrsa -F4 -out dev.key 2048
+	openssl req -batch -new -x509 -key dev.key -out dev.crt
+
+u-boot-fit: mkdir $(ROOT)/out/fit && cd $(ROOT)/out/fit
+	ln -s $(LINUX_IMAGE) && ln -s $(ARM_TF_BOOT) && ln -s $(LINUX_DTB)
+	cp $(LINUX_DTB) rpi3_pubkey.dtb
+	$(U-BOOT_PATH)/tools/mkimage -f $(ROOT)/out/rpi3_fit.its -K rpi3_pubkey.dtb -k keys -r image.fit
+
+u-boot-fit-clean: rm -rf $(ROOT)/out/fit
 
 ################################################################################
 # Busybox
