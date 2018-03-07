@@ -121,7 +121,7 @@ u-boot-env-clean:
 	rm -f $(RPI3_UBOOT_ENV)
 
 gen-pubkey:
-	mkdir $(ROOT)/out/keys && cd $(ROOT)/out/keys
+	mkdir -p $(ROOT)/out/keys && cd $(ROOT)/out/keys
 	openssl genrsa -F4 -out dev.key 2048
 	openssl req -batch -new -x509 -key dev.key -out dev.crt
 
@@ -129,7 +129,7 @@ gen-pubkey-clean:
 		rm -rf $(ROOT)/out/keys
 
 u-boot-fit: u-boot $(LINUX_IMAGE) $(ARM_TF_BOOT) $(LINUX_DTB)
-	mkdir $(ROOT)/out/fit
+	mkdir -p $(ROOT)/out/fit
 	cd $(ROOT)/out/fit && ln -s $(LINUX_IMAGE) && ln -s $(ARM_TF_BOOT) && ln -s $(LINUX_DTB) && ln -s $(RPI3_FIRMWARE_PATH)/rpi3_fit.its && cp $(LINUX_DTB) rpi3_pubkey.dtb
 	cd $(ROOT)/out/fit && $(U-BOOT_PATH)/tools/mkimage -f rpi3_fit.its -K rpi3_pubkey.dtb -k keys -r image.fit
 
@@ -220,7 +220,7 @@ filelist-tee: filelist-tee-common
 
 .PHONY: archive-boot
 archive-boot: u-boot-fit
-	mkdir $(BOOT_TARGET)
+	mkdir -p $(BOOT_TARGET)
 	cd $(BOOT_TARGET) && \
 		ln -s $(RPI3_BOOT_CONFIG) && \
 		ln -s $(FIT_IMAGE) && \
@@ -237,9 +237,10 @@ archive-boot: u-boot-fit
 		ln -s $(RPI3_STOCK_FW_PATH)/boot/start_db.elf && \
 		ln -s $(RPI3_STOCK_FW_PATH)/boot/start.elf && \
 		ln -s $(RPI3_STOCK_FW_PATH)/boot/start_x.elf
-	tar -chvf $(BOOT_FS_FILE) $(BOOT_TARGET) --owner=0 --group=0 --mode=755
+	tar -chvf $(BOOT_FS_FILE) $(BOOT_TARGET)/* --owner=0 --group=0 --mode=755
 
 .PHONY: archive-boot-clean
+archive-boot-clean:
 	rm -rf $(BOOT_TARGET) && rm -rf $(BOOT_FS_FILE)
 
 .PHONY: update_rootfs
