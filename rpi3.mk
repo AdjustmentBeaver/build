@@ -212,10 +212,7 @@ filelist-tee: linux
 filelist-tee: filelist-tee-common
 	@echo "dir /usr/bin 755 0 0" >> $(GEN_ROOTFS_FILELIST)
 	@echo "dir /boot 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-	@echo "file /boot/bcm2710-rpi-3-b.dtb $(LINUX_DTB) 755 0 0" >> $(GEN_ROOTFS_FILELIST)
 	@echo "file /boot/config.txt $(RPI3_BOOT_CONFIG) 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-	@echo "file /boot/Image $(LINUX_IMAGE) 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-	@echo "file /boot/optee.bin $(ARM_TF_BOOT) 755 0 0" >> $(GEN_ROOTFS_FILELIST)
 	@echo "file /boot/image.fit $(FIT_IMAGE) 755 0 0" >> $(GEN_ROOTFS_FILELIST)
 	@echo "file /boot/uboot.env $(RPI3_UBOOT_ENV) 755 0 0" >> $(GEN_ROOTFS_FILELIST)
 	@echo "file /boot/u-boot-rpi.bin $(U-BOOT_RPI_BIN) 755 0 0" >> $(GEN_ROOTFS_FILELIST)
