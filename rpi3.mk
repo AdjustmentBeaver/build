@@ -53,7 +53,8 @@ all: arm-tf optee-os optee-client xtest u-boot u-boot-rpi-bin\
 clean: arm-tf-clean busybox-clean u-boot-clean u-boot-rpi-bin-clean \
 	optee-os-clean optee-client-clean head-bin-clean \
 	optee-examples-clean gen-pubkey-clean u-boot-fit-clean \
-	archive-boot-clean
+	archive-boot-clean u-boot-env-clean linux-clean xtest-clean \
+	benchmark-app-clean
 
 include toolchain.mk
 
