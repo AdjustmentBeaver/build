@@ -83,7 +83,7 @@ arm-tf-clean:
 # Das U-Boot
 ################################################################################
 
-U-BOOT_EXPORTS ?= CROSS_COMPILE=$(LEGACY_AARCH64_CROSS_COMPILE) ARCH=arm64 DEVICE_TREE=$(RPI3_STOCK_FW_PATH_BOOT)/bcm2710-rpi-3-b.dtb
+U-BOOT_EXPORTS ?= CROSS_COMPILE=$(LEGACY_AARCH64_CROSS_COMPILE) ARCH=arm64 EXT_DTB=$(LINUX_DTB)
 
 .PHONY: u-boot
 u-boot: $(RPI3_HEAD_BIN)
