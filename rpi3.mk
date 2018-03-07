@@ -213,9 +213,9 @@ benchmark-app-clean: benchmark-app-clean-common
 .PHONY: filelist-tee
 filelist-tee: linux
 filelist-tee: filelist-tee-common
-        @echo "dir /usr/bin 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-        @cd $(MODULE_OUTPUT) && find ! -path . -type d | sed 's/\.\(.*\)/dir \1 755 0 0/g' >> $(GEN_ROOTFS_FILELIST)
-        @cd $(MODULE_OUTPUT) && find -type f | sed "s|\.\(.*\)|file \1 $(MODULE_OUTPUT)\1 755 0 0|g" >> $(GEN_ROOTFS_FILELIST)
+	@echo "dir /usr/bin 755 0 0" >> $(GEN_ROOTFS_FILELIST)
+	@cd $(MODULE_OUTPUT) && find ! -path . -type d | sed 's/\.\(.*\)/dir \1 755 0 0/g' >> $(GEN_ROOTFS_FILELIST)
+	@cd $(MODULE_OUTPUT) && find -type f | sed "s|\.\(.*\)|file \1 $(MODULE_OUTPUT)\1 755 0 0|g" >> $(GEN_ROOTFS_FILELIST)
 
 .PHONY: archive-boot
 archive-boot: u-boot-fit
@@ -236,7 +236,7 @@ archive-boot: u-boot-fit
 		ln -s $(RPI3_STOCK_FW_PATH)/boot/start_db.elf && \
 		ln -s $(RPI3_STOCK_FW_PATH)/boot/start.elf && \
 		ln -s $(RPI3_STOCK_FW_PATH)/boot/start_x.elf
-        tar -chvf $(BOOT_FS_FILE) $(BOOT_TARGET) --owner=0 --group=0 --mode=755
+	tar -chvf $(BOOT_FS_FILE) $(BOOT_TARGET) --owner=0 --group=0 --mode=755
 
 .PHONY: update_rootfs
 update_rootfs: arm-tf u-boot
