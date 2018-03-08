@@ -14,7 +14,7 @@ ifeq ($(CFG_TEE_BENCHMARK),y)
 all: benchmark-app
 clean: benchmark-app-clean
 endif
-all: arm-tf optee-os optee-client xtest u-boot u-boot-rpi-bin\
+all: toolchains arm-tf optee-os optee-client xtest u-boot u-boot-rpi-bin\
 	linux gen-pubkey u-boot-fit update_rootfs optee-examples archive-boot
 clean: arm-tf-clean busybox-clean u-boot-clean u-boot-rpi-bin-clean \
 	optee-os-clean optee-client-clean head-bin-clean \
