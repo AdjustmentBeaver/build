@@ -43,6 +43,8 @@ BOOT_FS_FILE	?= $(ROOT)/out/boot.tar.gz
 
 PUBKEY_DTB	?= rpi3_pubkey.dtb
 
+MKIMAGE_PATH ?= $(U-BOOT_PATH)/tools/mkimage
+
 ################################################################################
 # Targets
 ################################################################################
@@ -126,21 +128,27 @@ $(RPI3_UBOOT_ENV): $(RPI3_UBOOT_ENV_TXT) u-boot
 u-boot-env-clean:
 	rm -f $(RPI3_UBOOT_ENV)
 
-gen-pubkey:
-	@test -s $(ROOT)/out/fit/keys/dev.crt && echo "Key has already been generated" || \
-		mkdir -p $(ROOT)/out/fit/keys && cd $(ROOT)/out/fit/keys || \
-		openssl genrsa -F4 -out dev.key 2048 || \
-		openssl req -batch -new -x509 -key dev.key -out dev.crt || \
+$(ROOT)/out/fit/keys/dev.crt:
+	mkdir -p $(ROOT)/out/fit/keys && cd $(ROOT)/out/fit/keys && \
+	openssl genrsa -F4 -out dev.key 2048 && \
+	openssl req -batch -new -x509 -key dev.key -out dev.crt
 
+gen-pubkey: $(ROOT)/out/fit/keys/dev.crt
 
 gen-pubkey-clean:
 		rm -rf $(ROOT)/out/fit/keys
 
+$(LINUX_IMAGE): linux
+
+$(MKIMAGE_PATH): u-boot-tools
+
+$(ARM_TF_BOOT): arm-tf
+
 .PHONY: u-boot-fit
-u-boot-fit: u-boot-tools linux arm-tf
+u-boot-fit: $(MKIMAGE_PATH) $(LINUX_IMAGE) $(ARM_TF_BOOT)
 	mkdir -p $(ROOT)/out/fit
 	cd $(ROOT)/out/fit && ln -sf $(LINUX_IMAGE) && ln -sf $(ARM_TF_BOOT) && ln -sf $(LINUX_DTB) && ln -sf $(RPI3_FIRMWARE_PATH)/rpi3_fit.its && cp $(LINUX_DTB) rpi3_pubkey.dtb
-	cd $(ROOT)/out/fit && $(U-BOOT_PATH)/tools/mkimage -f rpi3_fit.its -K rpi3_pubkey.dtb -k keys -r image.fit
+	cd $(ROOT)/out/fit && $(MKIMAGE_PATH) -f rpi3_fit.its -K rpi3_pubkey.dtb -k keys -r image.fit
 
 u-boot-fit-clean:
 	rm -rf $(ROOT)/out/fit
