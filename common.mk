@@ -4,7 +4,7 @@
 
 SHELL := bash
 BASH ?= bash
-ROOT ?= $(shell pwd)/..
+ROOT ?= $(shell cd .. && pwd)
 
 BUILD_PATH			?= $(ROOT)/build
 LINUX_PATH			?= $(ROOT)/linux
