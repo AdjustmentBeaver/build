@@ -1,3 +1,6 @@
+ifndef HEAD_INCLUDED
+HEAD_INCLUDED = 1
+
 ################################################################################
 # Following variables defines how the NS_USER (Non Secure User - Client
 # Application), NS_KERNEL (Non Secure Kernel), S_KERNEL (Secure Kernel) and
@@ -156,3 +159,5 @@ BOOT_TARGET		?= $(ROOT)/out/boot
 BOOT_FS_FILE	?= $(ROOT)/out/boot.tar.gz
 
 PUBKEY_DTB	?= rpi3_pubkey.dtb
+
+endif

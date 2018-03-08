@@ -1,6 +1,6 @@
-#
-# Common definition to all platforms
-#
+ifndef COMMON_INCLUDED
+COMMON_INCLUDED = 1
+
 include head.mk
 
 ################################################################################
@@ -240,3 +240,5 @@ filelist-tee-common: optee-client xtest optee-examples
 	@echo "file /etc/init.d/optee $(BUILD_PATH)/init.d.optee 755 0 0"	>> $(fl)
 	@echo "slink /etc/rc.d/S09_optee /etc/init.d/optee 755 0 0"	>> $(fl)
 	@echo "# filelist-tee-common /end"				>> $(fl)
+
+endif
