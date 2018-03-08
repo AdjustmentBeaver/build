@@ -128,8 +128,8 @@ u-boot-env-clean:
 
 gen-pubkey:
 	mkdir -p $(ROOT)/out/keys && cd $(ROOT)/out/keys
-	openssl genrsa -F4 -out dev.key 2048
-	openssl req -batch -new -x509 -key dev.key -out dev.crt
+	@test -s dev.key && openssl genrsa -F4 -out dev.key 2048 || echo "Key has already been generated"
+	@test -s dev.crt && openssl req -batch -new -x509 -key dev.key -out dev.crt || echo "Certificate has already been generated"
 
 gen-pubkey-clean:
 		rm -rf $(ROOT)/out/keys
