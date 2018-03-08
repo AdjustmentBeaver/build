@@ -53,7 +53,7 @@ all: benchmark-app
 clean: benchmark-app-clean
 endif
 all: arm-tf optee-os optee-client xtest u-boot u-boot-rpi-bin\
-	linux gen-pubkey u-boot-fit update_rootfs optee-examples archive-boot
+	$(LINUX_IMAGE) gen-pubkey u-boot-fit update_rootfs optee-examples archive-boot
 clean: arm-tf-clean busybox-clean u-boot-clean u-boot-rpi-bin-clean \
 	optee-os-clean optee-client-clean head-bin-clean \
 	optee-examples-clean gen-pubkey-clean u-boot-fit-clean \
@@ -85,6 +85,7 @@ arm-tf: optee-os
 	  cat $(ARM_TF_HEAD) $(OPTEE_OS_PAGER) > $(ARM_TF_BOOT) && \
 	  rm scratch $(ARM_TF_TMP) $(ARM_TF_HEAD)
 
+.PHONY: arm-tf-clean
 arm-tf-clean:
 	$(ARM_TF_EXPORTS) $(MAKE) -C $(ARM_TF_PATH) $(ARM_TF_FLAGS) clean
 
@@ -95,21 +96,21 @@ arm-tf-clean:
 U-BOOT_DEFAULT_EXPORTS ?= CROSS_COMPILE=$(LEGACY_AARCH64_CROSS_COMPILE) ARCH=arm64
 U-BOOT_EXPORTS ?= $(U-BOOT_DEFAULT_EXPORTS) EXT_DTB=$(ROOT)/out/fit/$(PUBKEY_DTB)
 
-.PHONY: u-boot-tools
-u-boot-tools: $(RPI3_HEAD_BIN)
+$(MKIMAGE_PATH): $(RPI3_HEAD_BIN)
 	$(U-BOOT_DEFAULT_EXPORTS) EXT_DTB=$(RPI3_STOCK_FW_PATH_BOOT)/bcm2710-rpi-3-b.dtb $(MAKE) -C $(U-BOOT_PATH) tools
 
-.PHONY: u-boot
-u-boot: u-boot-tools
+u-boot: $(MKIMAGE_PATH)
 	$(U-BOOT_EXPORTS) $(MAKE) -C $(U-BOOT_PATH) rpi_3_defconfig
 	$(U-BOOT_EXPORTS) $(MAKE) -C $(U-BOOT_PATH) all
 
+.PHONY: u-boot-clean
 u-boot-clean:
 	$(U-BOOT_DEFAULT_EXPORTS) $(MAKE) -C $(U-BOOT_PATH) clean
 
 u-boot-rpi-bin: $(RPI3_UBOOT_ENV) u-boot
 	cd $(U-BOOT_PATH) && cat $(RPI3_HEAD_BIN) $(U-BOOT_BIN) > $(U-BOOT_RPI_BIN)
 
+.PHONY: u-boot-rpi-clean
 u-boot-rpi-bin-clean:
 	rm -f $(U-BOOT_RPI_BIN)
 
@@ -118,6 +119,7 @@ $(RPI3_HEAD_BIN): $(RPI3_FIRMWARE_PATH)/head.S
 	$(AARCH64_CROSS_COMPILE)as $< -o $(ROOT)/out/head.o
 	$(AARCH64_CROSS_COMPILE)objcopy -O binary $(ROOT)/out/head.o $@
 
+.PHONY: head-bin-clean
 head-bin-clean:
 	rm -f $(RPI3_HEAD_BIN) $(ROOT)/out/head.o
 
@@ -125,6 +127,7 @@ $(RPI3_UBOOT_ENV): $(RPI3_UBOOT_ENV_TXT) u-boot
 	mkdir -p $(ROOT)/out
 	$(U-BOOT_PATH)/tools/mkenvimage -s 0x4000 -o $(ROOT)/out/uboot.env $(RPI3_UBOOT_ENV_TXT)
 
+.PHONY: u-boot-env-clean
 u-boot-env-clean:
 	rm -f $(RPI3_UBOOT_ENV)
 
@@ -135,16 +138,12 @@ $(ROOT)/out/fit/keys/dev.crt:
 
 gen-pubkey: $(ROOT)/out/fit/keys/dev.crt ;
 
+.PHONY: gen-pubkey-clean
 gen-pubkey-clean:
 		rm -rf $(ROOT)/out/fit/keys
 
-$(LINUX_IMAGE): linux ;
-
-$(MKIMAGE_PATH): u-boot-tools ;
-
 $(ARM_TF_BOOT): arm-tf ;
 
-.PHONY: u-boot-fit
 u-boot-fit: $(MKIMAGE_PATH) $(LINUX_IMAGE) $(ARM_TF_BOOT) gen-pubkey
 	mkdir -p $(ROOT)/out/fit
 	cd $(ROOT)/out/fit && ln -sf $(LINUX_IMAGE) && ln -sf $(ARM_TF_BOOT) && ln -sf $(LINUX_DTB) && ln -sf $(RPI3_FIRMWARE_PATH)/rpi3_fit.its && cp $(LINUX_DTB) rpi3_pubkey.dtb
@@ -161,8 +160,10 @@ BUSYBOX_CLEAN_COMMON_TARGET = rpi3 clean
 
 busybox: busybox-common
 
+.PHONY: busybox-clean
 busybox-clean: busybox-clean-common
 
+.PHONY: busybox-cleaner
 busybox-cleaner: busybox-cleaner-common
 ################################################################################
 # Linux kernel
@@ -176,17 +177,20 @@ linux-defconfig: $(LINUX_PATH)/.config
 
 LINUX_COMMON_FLAGS += ARCH=arm64
 
-linux: linux-common
+$(LINUX_IMAGE): linux-common
 	$(MAKE) -C $(LINUX_PATH) $(LINUX_COMMON_FLAGS) INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH=$(MODULE_OUTPUT) modules_install
 
+.PHONY: linux-defconfig-clean
 linux-defconfig-clean: linux-defconfig-clean-common
 
 LINUX_CLEAN_COMMON_FLAGS += ARCH=arm64
 
+.PHONY: linux-clean
 linux-clean: linux-clean-common
 
 LINUX_CLEANER_COMMON_FLAGS += ARCH=arm64
 
+.PHONY: linux-cleaner
 linux-cleaner: linux-cleaner-common
 
 ################################################################################
@@ -196,10 +200,12 @@ OPTEE_OS_COMMON_FLAGS += PLATFORM=rpi3
 optee-os: optee-os-common
 
 OPTEE_OS_CLEAN_COMMON_FLAGS += PLATFORM=rpi3
+.PHONY: optee-os-clean
 optee-os-clean: optee-os-clean-common
 
 optee-client: optee-client-common
 
+.PHONY: optee-client-clean
 optee-client-clean: optee-client-clean-common
 
 ################################################################################
@@ -207,6 +213,7 @@ optee-client-clean: optee-client-clean-common
 ################################################################################
 xtest: xtest-common
 
+.PHONY: xtest-clean
 xtest-clean: xtest-clean-common
 
 xtest-patch: xtest-patch-common
@@ -216,6 +223,7 @@ xtest-patch: xtest-patch-common
 ################################################################################
 optee-examples: optee-examples-common
 
+.PHONY: optee-examples-clean
 optee-examples-clean: optee-examples-clean-common
 
 ################################################################################
@@ -223,13 +231,14 @@ optee-examples-clean: optee-examples-clean-common
 ################################################################################
 benchmark-app: benchmark-app-common
 
+.PHONY: benchmark-app-clean
 benchmark-app-clean: benchmark-app-clean-common
 
 ################################################################################
 # Root FS
 ################################################################################
 .PHONY: filelist-tee
-filelist-tee: linux
+filelist-tee: $(LINUX_IMAGE)
 filelist-tee: filelist-tee-common
 	@echo "dir /usr/bin 755 0 0" >> $(GEN_ROOTFS_FILELIST)
 	@cd $(MODULE_OUTPUT) && find ! -path . -type d | sed 's/\.\(.*\)/dir \1 755 0 0/g' >> $(GEN_ROOTFS_FILELIST)
@@ -260,7 +269,6 @@ archive-boot: u-boot-fit
 archive-boot-clean:
 	rm -rf $(BOOT_TARGET) && rm -rf $(BOOT_FS_FILE)
 
-.PHONY: update_rootfs
 update_rootfs: arm-tf u-boot
 update_rootfs: update_rootfs-common
 

@@ -29,16 +29,6 @@ CFG_TEE_BENCHMARK		?= n
 
 CCACHE ?= $(shell which ccache) # Don't remove this comment (space is needed)
 
-# Accessing a shared folder on the host from QEMU:
-# # Set QEMU_VIRTFS_ENABLE to 'y' and adjust QEMU_VIRTFS_HOST_DIR
-# # Then in QEMU, run:
-# # $ mount -t 9p -o trans=virtio host <mount_point>
-QEMU_VIRTFS_ENABLE		?= n
-QEMU_VIRTFS_HOST_DIR	?= $(ROOT)
-
-# Enable SLiRP user networking
-QEMU_USERNET_ENABLE		?= n
-
 ################################################################################
 # Mandatory for autotools (for specifying --host)
 ################################################################################
@@ -144,7 +134,6 @@ DEBUG ?= 0
 ################################################################################
 # default target is all
 ################################################################################
-.PHONY: all
 all:
 
 ################################################################################
@@ -153,7 +142,6 @@ all:
 BUSYBOX_COMMON_TARGET		?= TOBEDEFINED
 BUSYBOX_CLEAN_COMMON_TARGET	?= TOBEDEFINED
 
-.PHONY: busybox-common
 busybox-common: linux
 	cd $(GEN_ROOTFS_PATH) &&  \
 		CROSS_COMPILE=$(CROSS_COMPILE_NS_USER) \
@@ -181,7 +169,6 @@ endif
 
 LINUX_COMMON_FLAGS ?= LOCALVERSION= CROSS_COMPILE=$(CROSS_COMPILE_NS_KERNEL)
 
-.PHONY: linux-common
 linux-common: linux-defconfig
 	$(MAKE) -C $(LINUX_PATH) $(LINUX_COMMON_FLAGS)
 
@@ -206,84 +193,6 @@ linux-cleaner-common: linux-defconfig-clean
 	$(MAKE) -C $(LINUX_PATH) $(LINUX_CLEANER_COMMON_FLAGS) distclean
 
 ################################################################################
-# EDK2 / Tianocore
-################################################################################
-.PHONY: edk2-common
-edk2-common:
-	$(call edk2-env) && \
-	export PACKAGES_PATH=$(EDK2_PATH):$(EDK2_PLATFORMS_PATH) && \
-	source $(EDK2_PATH)/edksetup.sh && \
-	$(MAKE) -j1 -C $(EDK2_PATH)/BaseTools && \
-	$(call edk2-call) all
-
-.PHONY: edk2-clean-common
-edk2-clean-common:
-	$(call edk2-env) && \
-	export PACKAGES_PATH=$(EDK2_PATH):$(ROOT)/edk2-platforms && \
-	source $(EDK2_PATH)/edksetup.sh && \
-	$(MAKE) -j1 -C $(EDK2_PATH)/BaseTools clean && \
-	$(call edk2-call) cleanall
-
-################################################################################
-# QEMU / QEMUv8
-################################################################################
-QEMU_CONFIGURE_PARAMS_COMMON = --cc="$(CCACHE)gcc" --extra-cflags="-Wno-error"
-
-ifeq ($(QEMU_VIRTFS_ENABLE),y)
-QEMU_CONFIGURE_PARAMS_COMMON +=  --enable-virtfs
-QEMU_EXTRA_ARGS +=\
-	-fsdev local,id=fsdev0,path=$(QEMU_VIRTFS_HOST_DIR),security_model=none \
-	-device virtio-9p-device,fsdev=fsdev0,mount_tag=host
-endif
-
-ifeq ($(QEMU_USERNET_ENABLE),y)
-QEMU_EXTRA_ARGS +=\
-	-netdev user,id=vmnic -device virtio-net-device,netdev=vmnic
-endif
-
-define run-help
-	@echo
-	@echo \* QEMU is now waiting to start the execution
-	@echo \* Start execution with either a \'c\' followed by \<enter\> in the QEMU console or
-	@echo \* attach a debugger and continue from there.
-	@echo \*
-	@echo \* To run OP-TEE tests, use the xtest command in the \'Normal World\' terminal
-	@echo \* Enter \'xtest -h\' for help.
-	@echo
-endef
-
-ifneq (, $(LAUNCH_TERMINAL))
-define launch-terminal
-	@nc -z  127.0.0.1 $(1) || \
-		$(LAUNCH_TERMINAL) $(SOC_TERM_PATH)/soc_term $(1) &
-endef
-else
-gnome-terminal := $(shell command -v gnome-terminal 2>/dev/null)
-xterm := $(shell command -v xterm 2>/dev/null)
-ifdef gnome-terminal
-# Note: the title option (-t) is ignored with gnome-terminal versions
-# >= 3.14 and < 3.20
-define launch-terminal
-	@nc -z  127.0.0.1 $(1) || \
-	$(gnome-terminal) -t "$(2)" -x $(SOC_TERM_PATH)/soc_term $(1) &
-endef
-else
-ifdef xterm
-define launch-terminal
-	@nc -z  127.0.0.1 $(1) || \
-	$(xterm) -title $(2) -e $(BASH) -c "$(SOC_TERM_PATH)/soc_term $(1)" &
-endef
-else
-check-terminal := @echo "Error: could not find gnome-terminal nor xterm" ; false
-endif
-endif
-endif
-
-define wait-for-ports
-	@while ! nc -z 127.0.0.1 $(1) || ! nc -z 127.0.0.1 $(2); do sleep 1; done
-endef
-
-################################################################################
 # OP-TEE
 ################################################################################
 OPTEE_OS_COMMON_FLAGS ?= \
@@ -296,7 +205,6 @@ OPTEE_OS_COMMON_FLAGS ?= \
 	DEBUG=$(DEBUG) \
 	CFG_TEE_BENCHMARK=$(CFG_TEE_BENCHMARK)
 
-.PHONY: optee-os-common
 optee-os-common:
 	$(MAKE) -C $(OPTEE_OS_PATH) $(OPTEE_OS_COMMON_FLAGS)
 
@@ -312,7 +220,6 @@ optee-os-clean-common: xtest-clean optee-examples-clean
 OPTEE_CLIENT_COMMON_FLAGS ?= CROSS_COMPILE=$(CROSS_COMPILE_NS_USER) \
 	CFG_TEE_BENCHMARK=$(CFG_TEE_BENCHMARK) \
 
-.PHONY: optee-client-common
 optee-client-common:
 	$(MAKE) -C $(OPTEE_CLIENT_PATH) $(OPTEE_CLIENT_COMMON_FLAGS)
 
@@ -334,7 +241,6 @@ XTEST_COMMON_FLAGS ?= CROSS_COMPILE_HOST=$(CROSS_COMPILE_NS_USER)\
 	COMPILE_NS_USER=$(COMPILE_NS_USER) \
 	O=$(OPTEE_TEST_OUT_PATH)
 
-.PHONY: xtest-common
 xtest-common: optee-os optee-client
 	$(MAKE) -C $(OPTEE_TEST_PATH) $(XTEST_COMMON_FLAGS)
 
@@ -347,7 +253,6 @@ xtest-clean-common:
 
 XTEST_PATCH_COMMON_FLAGS ?= $(XTEST_COMMON_FLAGS)
 
-.PHONY: xtest-patch-common
 xtest-patch-common:
 	$(MAKE) -C $(OPTEE_TEST_PATH) $(XTEST_PATCH_COMMON_FLAGS) patch
 
@@ -359,7 +264,6 @@ OPTEE_EXAMPLES_COMMON_FLAGS ?= HOST_CROSS_COMPILE=$(CROSS_COMPILE_NS_USER)\
 	TA_DEV_KIT_DIR=$(OPTEE_OS_TA_DEV_KIT_DIR) \
 	TEEC_EXPORT=$(OPTEE_CLIENT_EXPORT)
 
-.PHONY: optee-examples-common
 optee-examples-common: optee-os optee-client
 	$(MAKE) -C $(OPTEE_EXAMPLES_PATH) $(OPTEE_EXAMPLES_COMMON_FLAGS)
 
@@ -378,7 +282,6 @@ BENCHMARK_APP_COMMON_FLAGS ?= CROSS_COMPILE=$(CROSS_COMPILE_NS_USER) \
 	TEEC_INTERNAL_INCLUDES=$(OPTEE_CLIENT_PATH)/libteec \
 	MULTIARCH=$(MULTIARCH)
 
-.PHONY: benchmark-app-common
 benchmark-app-common: optee-os optee-client
 	$(MAKE) -C $(BENCHMARK_APP_PATH) $(BENCHMARK_APP_COMMON_FLAGS)
 
@@ -389,7 +292,6 @@ benchmark-app-clean-common:
 ################################################################################
 # rootfs
 ################################################################################
-.PHONY: update_rootfs-common
 update_rootfs-common: busybox filelist-tee
 	cat $(GEN_ROOTFS_PATH)/filelist-final.txt > $(GEN_ROOTFS_PATH)/filelist.tmp
 	cat $(GEN_ROOTFS_FILELIST) >> $(GEN_ROOTFS_PATH)/filelist.tmp
@@ -404,7 +306,6 @@ update_rootfs-clean-common:
 	rm -f $(GEN_ROOTFS_PATH)/filelist-tmp.txt
 	rm -f $(GEN_ROOTFS_FILELIST)
 
-.PHONY: filelist-tee-common
 ifeq ($(CFG_TEE_BENCHMARK),y)
 filelist-tee-common: benchmark-app
 endif
@@ -437,10 +338,6 @@ filelist-tee-common: optee-client xtest optee-examples
 									>> $(fl); \
 		echo "file /lib/libyaml-0.so.2.0.5 $(LIBYAML_LIB_OUT)/libyaml-0.so.2.0.5 755 0 0" \
 									>> $(fl); \
-	fi
-	@if [ "$(QEMU_USERNET_ENABLE)" = "y" ]; then \
-		echo "slink /etc/rc.d/S02_udhcp_networking /etc/init.d/udhcpc 755 0 0" \
-		>> $(fl); \
 	fi
 	@echo "# Secure storage dir" 					>> $(fl)
 	@echo "dir /data 755 0 0" 					>> $(fl)
