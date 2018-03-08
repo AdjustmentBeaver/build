@@ -1,49 +1,11 @@
 ################################################################################
-# Following variables defines how the NS_USER (Non Secure User - Client
-# Application), NS_KERNEL (Non Secure Kernel), S_KERNEL (Secure Kernel) and
-# S_USER (Secure User - TA) are compiled
+# Raspberry Pi 3
 ################################################################################
-override COMPILE_NS_USER   := 64
-override COMPILE_NS_KERNEL := 64
-override COMPILE_S_USER    := 64
-override COMPILE_S_KERNEL  := 64
-
+include head.mk
 include common.mk
-
-################################################################################
-# Paths to git projects and various binaries
-################################################################################
-ARM_TF_PATH		?= $(ROOT)/arm-trusted-firmware
-ARM_TF_OUT		?= $(ARM_TF_PATH)/build/rpi3/debug
-ARM_TF_BIN		?= $(ARM_TF_OUT)/bl31.bin
-ARM_TF_TMP		?= $(ARM_TF_OUT)/bl31.tmp
-ARM_TF_HEAD		?= $(ARM_TF_OUT)/bl31.head
-ARM_TF_BOOT		?= $(ARM_TF_OUT)/optee.bin
-
-U-BOOT_PATH			?= $(ROOT)/u-boot
-U-BOOT_BIN			?= $(U-BOOT_PATH)/u-boot.bin
-U-BOOT_RPI_BIN	?= $(U-BOOT_PATH)/u-boot-rpi.bin
-
-RPI3_FIRMWARE_PATH			?= $(BUILD_PATH)/rpi3/firmware
-RPI3_HEAD_BIN						?= $(ROOT)/out/head.bin
-RPI3_BOOT_CONFIG				?= $(RPI3_FIRMWARE_PATH)/config.txt
-RPI3_UBOOT_ENV					?= $(ROOT)/out/uboot.env
-RPI3_UBOOT_ENV_TXT			?= $(RPI3_FIRMWARE_PATH)/uboot.env.txt
-RPI3_STOCK_FW_PATH			?= $(ROOT)/firmware
-RPI3_STOCK_FW_PATH_BOOT	?= $(RPI3_STOCK_FW_PATH)/boot
-OPTEE_OS_PAGER					?= $(OPTEE_OS_PATH)/out/arm/core/tee-pager.bin
-
-LINUX_IMAGE			?= $(LINUX_PATH)/arch/arm64/boot/Image
-LINUX_DTB				?= $(LINUX_PATH)/arch/arm64/boot/dts/broadcom/bcm2710-rpi-3-b.dtb
-MODULE_OUTPUT		?= $(ROOT)/module_output
-FIT_IMAGE				?= $(ROOT)/out/fit/image.fit
-
-BOOT_TARGET		?= $(ROOT)/out/boot
-BOOT_FS_FILE	?= $(ROOT)/out/boot.tar.gz
-
-PUBKEY_DTB	?= rpi3_pubkey.dtb
-
-MKIMAGE_PATH ?= $(U-BOOT_PATH)/tools/mkimage
+include toolchain.mk
+include optee.mk
+include uboot.mk
 
 ################################################################################
 # Targets
@@ -58,101 +20,6 @@ clean: arm-tf-clean busybox-clean u-boot-clean u-boot-rpi-bin-clean \
 	optee-os-clean optee-client-clean head-bin-clean \
 	optee-examples-clean gen-pubkey-clean u-boot-fit-clean \
 	archive-boot-clean u-boot-env-clean linux-clean xtest-clean \
-
-include toolchain.mk
-
-################################################################################
-# ARM Trusted Firmware
-################################################################################
-ARM_TF_EXPORTS ?= \
-	CROSS_COMPILE="$(CCACHE)$(AARCH64_CROSS_COMPILE)"
-
-ARM_TF_FLAGS ?= \
-	BL32=$(OPTEE_OS_BIN) \
-	DEBUG=1 \
-	V=0 \
-	CRASH_REPORTING=1 \
-	LOG_LEVEL=40 \
-	PLAT=rpi3 \
-	SPD=opteed
-
-arm-tf: optee-os
-	$(ARM_TF_EXPORTS) $(MAKE) -C $(ARM_TF_PATH) $(ARM_TF_FLAGS) all
-	cd $(ARM_TF_OUT) && \
-	  dd if=/dev/zero of=scratch bs=1c count=131072 && \
-	  cat $(ARM_TF_BIN) scratch > $(ARM_TF_TMP) && \
-	  dd if=$(ARM_TF_TMP) of=$(ARM_TF_HEAD) bs=1c count=131072 && \
-	  cat $(ARM_TF_HEAD) $(OPTEE_OS_PAGER) > $(ARM_TF_BOOT) && \
-	  rm scratch $(ARM_TF_TMP) $(ARM_TF_HEAD)
-
-.PHONY: arm-tf-clean
-arm-tf-clean:
-	$(ARM_TF_EXPORTS) $(MAKE) -C $(ARM_TF_PATH) $(ARM_TF_FLAGS) clean
-
-################################################################################
-# Das U-Boot
-################################################################################
-
-U-BOOT_DEFAULT_EXPORTS ?= CROSS_COMPILE=$(LEGACY_AARCH64_CROSS_COMPILE) ARCH=arm64
-U-BOOT_EXPORTS ?= $(U-BOOT_DEFAULT_EXPORTS) EXT_DTB=$(ROOT)/out/fit/$(PUBKEY_DTB)
-
-$(MKIMAGE_PATH): $(RPI3_HEAD_BIN)
-	$(U-BOOT_DEFAULT_EXPORTS) EXT_DTB=$(RPI3_STOCK_FW_PATH_BOOT)/bcm2710-rpi-3-b.dtb $(MAKE) -C $(U-BOOT_PATH) tools
-
-u-boot: $(MKIMAGE_PATH)
-	$(U-BOOT_EXPORTS) $(MAKE) -C $(U-BOOT_PATH) rpi_3_defconfig
-	$(U-BOOT_EXPORTS) $(MAKE) -C $(U-BOOT_PATH) all
-
-.PHONY: u-boot-clean
-u-boot-clean:
-	$(U-BOOT_DEFAULT_EXPORTS) $(MAKE) -C $(U-BOOT_PATH) clean
-
-u-boot-rpi-bin: $(RPI3_UBOOT_ENV) u-boot
-	cd $(U-BOOT_PATH) && cat $(RPI3_HEAD_BIN) $(U-BOOT_BIN) > $(U-BOOT_RPI_BIN)
-
-.PHONY: u-boot-rpi-clean
-u-boot-rpi-bin-clean:
-	rm -f $(U-BOOT_RPI_BIN)
-
-$(RPI3_HEAD_BIN): $(RPI3_FIRMWARE_PATH)/head.S
-	mkdir -p $(ROOT)/out/
-	$(AARCH64_CROSS_COMPILE)as $< -o $(ROOT)/out/head.o
-	$(AARCH64_CROSS_COMPILE)objcopy -O binary $(ROOT)/out/head.o $@
-
-.PHONY: head-bin-clean
-head-bin-clean:
-	rm -f $(RPI3_HEAD_BIN) $(ROOT)/out/head.o
-
-$(RPI3_UBOOT_ENV): $(RPI3_UBOOT_ENV_TXT) u-boot
-	mkdir -p $(ROOT)/out
-	$(U-BOOT_PATH)/tools/mkenvimage -s 0x4000 -o $(ROOT)/out/uboot.env $(RPI3_UBOOT_ENV_TXT)
-
-.PHONY: u-boot-env-clean
-u-boot-env-clean:
-	rm -f $(RPI3_UBOOT_ENV)
-
-$(ROOT)/out/fit/keys/dev.crt:
-	mkdir -p $(ROOT)/out/fit/keys && cd $(ROOT)/out/fit/keys && \
-	openssl genrsa -F4 -out dev.key 2048 && \
-	openssl req -batch -new -x509 -key dev.key -out dev.crt
-
-gen-pubkey: $(ROOT)/out/fit/keys/dev.crt ;
-
-.PHONY: gen-pubkey-clean
-gen-pubkey-clean:
-		rm -rf $(ROOT)/out/fit/keys
-
-$(ARM_TF_BOOT): arm-tf ;
-
-$(LINUX_IMAGE): linux ;
-
-u-boot-fit: $(MKIMAGE_PATH) $(LINUX_IMAGE) $(ARM_TF_BOOT) gen-pubkey
-	mkdir -p $(ROOT)/out/fit
-	cd $(ROOT)/out/fit && ln -sf $(LINUX_IMAGE) && ln -sf $(ARM_TF_BOOT) && ln -sf $(LINUX_DTB) && ln -sf $(RPI3_FIRMWARE_PATH)/rpi3_fit.its && cp $(LINUX_DTB) rpi3_pubkey.dtb
-	cd $(ROOT)/out/fit && $(MKIMAGE_PATH) -f rpi3_fit.its -K rpi3_pubkey.dtb -k keys -r image.fit
-
-u-boot-fit-clean:
-	rm -rf $(ROOT)/out/fit
 
 ################################################################################
 # Busybox
@@ -194,47 +61,6 @@ LINUX_CLEANER_COMMON_FLAGS += ARCH=arm64
 
 .PHONY: linux-cleaner
 linux-cleaner: linux-cleaner-common
-
-################################################################################
-# OP-TEE
-################################################################################
-OPTEE_OS_COMMON_FLAGS += PLATFORM=rpi3
-optee-os: optee-os-common
-
-OPTEE_OS_CLEAN_COMMON_FLAGS += PLATFORM=rpi3
-.PHONY: optee-os-clean
-optee-os-clean: optee-os-clean-common
-
-optee-client: optee-client-common
-
-.PHONY: optee-client-clean
-optee-client-clean: optee-client-clean-common
-
-################################################################################
-# xtest / optee_test
-################################################################################
-xtest: xtest-common
-
-.PHONY: xtest-clean
-xtest-clean: xtest-clean-common
-
-xtest-patch: xtest-patch-common
-
-################################################################################
-# Sample applications / optee_examples
-################################################################################
-optee-examples: optee-examples-common
-
-.PHONY: optee-examples-clean
-optee-examples-clean: optee-examples-clean-common
-
-################################################################################
-# benchmark
-################################################################################
-benchmark-app: benchmark-app-common
-
-.PHONY: benchmark-app-clean
-benchmark-app-clean: benchmark-app-clean-common
 
 ################################################################################
 # Root FS
