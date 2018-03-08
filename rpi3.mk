@@ -127,13 +127,13 @@ u-boot-env-clean:
 	rm -f $(RPI3_UBOOT_ENV)
 
 gen-pubkey:
-	@test -s dev.key && mkdir -p $(ROOT)/out/keys && cd $(ROOT)/out/keys && \
+	@test -s $(ROOT)/out/fit/keys/dev.crt && mkdir -p $(ROOT)/out/fit/keys && cd $(ROOT)/out/fit/keys && \
 		openssl genrsa -F4 -out dev.key 2048 && \
 		openssl req -batch -new -x509 -key dev.key -out dev.crt || \
 		echo "Key has already been generated"
 
 gen-pubkey-clean:
-		rm -rf $(ROOT)/out/keys
+		rm -rf $(ROOT)/out/fit/keys
 
 .PHONY: u-boot-fit
 u-boot-fit: u-boot-tools linux arm-tf
