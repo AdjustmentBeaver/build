@@ -95,7 +95,7 @@ U-BOOT_EXPORTS ?= $(U-BOOT_DEFAULT_EXPORTS) EXT_DTB=$(ROOT)/out/fit/$(PUBKEY_DTB
 
 .PHONY: u-boot-tools
 u-boot-tools: $(RPI3_HEAD_BIN)
-	$(U-BOOT_DEFAULT_EXPORTS) $(MAKE) -C $(U-BOOT_PATH) tools
+	$(U-BOOT_DEFAULT_EXPORTS) EXT_DTB=$(RPI3_STOCK_FW_PATH_BOOT)/bcm2710-rpi-3-b.dtb $(MAKE) -C $(U-BOOT_PATH) tools
 
 .PHONY: u-boot
 u-boot: u-boot-tools
