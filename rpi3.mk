@@ -133,19 +133,19 @@ $(ROOT)/out/fit/keys/dev.crt:
 	openssl genrsa -F4 -out dev.key 2048 && \
 	openssl req -batch -new -x509 -key dev.key -out dev.crt
 
-gen-pubkey: $(ROOT)/out/fit/keys/dev.crt
+gen-pubkey: $(ROOT)/out/fit/keys/dev.crt ;
 
 gen-pubkey-clean:
 		rm -rf $(ROOT)/out/fit/keys
 
-$(LINUX_IMAGE): linux
+$(LINUX_IMAGE): linux ;
 
-$(MKIMAGE_PATH): u-boot-tools
+$(MKIMAGE_PATH): u-boot-tools ;
 
-$(ARM_TF_BOOT): arm-tf
+$(ARM_TF_BOOT): arm-tf ;
 
 .PHONY: u-boot-fit
-u-boot-fit: $(MKIMAGE_PATH) $(LINUX_IMAGE) $(ARM_TF_BOOT)
+u-boot-fit: $(MKIMAGE_PATH) $(LINUX_IMAGE) $(ARM_TF_BOOT) gen-pubkey
 	mkdir -p $(ROOT)/out/fit
 	cd $(ROOT)/out/fit && ln -sf $(LINUX_IMAGE) && ln -sf $(ARM_TF_BOOT) && ln -sf $(LINUX_DTB) && ln -sf $(RPI3_FIRMWARE_PATH)/rpi3_fit.its && cp $(LINUX_DTB) rpi3_pubkey.dtb
 	cd $(ROOT)/out/fit && $(MKIMAGE_PATH) -f rpi3_fit.its -K rpi3_pubkey.dtb -k keys -r image.fit
