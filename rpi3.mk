@@ -53,7 +53,7 @@ all: benchmark-app
 clean: benchmark-app-clean
 endif
 all: arm-tf optee-os optee-client xtest u-boot u-boot-rpi-bin\
-	$(LINUX_IMAGE) gen-pubkey u-boot-fit update_rootfs optee-examples archive-boot
+	linux gen-pubkey u-boot-fit update_rootfs optee-examples archive-boot
 clean: arm-tf-clean busybox-clean u-boot-clean u-boot-rpi-bin-clean \
 	optee-os-clean optee-client-clean head-bin-clean \
 	optee-examples-clean gen-pubkey-clean u-boot-fit-clean \
@@ -144,6 +144,8 @@ gen-pubkey-clean:
 
 $(ARM_TF_BOOT): arm-tf ;
 
+$(LINUX_IMAGE): linux ;
+
 u-boot-fit: $(MKIMAGE_PATH) $(LINUX_IMAGE) $(ARM_TF_BOOT) gen-pubkey
 	mkdir -p $(ROOT)/out/fit
 	cd $(ROOT)/out/fit && ln -sf $(LINUX_IMAGE) && ln -sf $(ARM_TF_BOOT) && ln -sf $(LINUX_DTB) && ln -sf $(RPI3_FIRMWARE_PATH)/rpi3_fit.its && cp $(LINUX_DTB) rpi3_pubkey.dtb
@@ -177,7 +179,7 @@ linux-defconfig: $(LINUX_PATH)/.config
 
 LINUX_COMMON_FLAGS += ARCH=arm64
 
-$(LINUX_IMAGE): linux-common
+linux: linux-common
 	$(MAKE) -C $(LINUX_PATH) $(LINUX_COMMON_FLAGS) INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH=$(MODULE_OUTPUT) modules_install
 
 .PHONY: linux-defconfig-clean
@@ -238,7 +240,7 @@ benchmark-app-clean: benchmark-app-clean-common
 # Root FS
 ################################################################################
 .PHONY: filelist-tee
-filelist-tee: $(LINUX_IMAGE)
+filelist-tee: linux
 filelist-tee: filelist-tee-common
 	@echo "dir /usr/bin 755 0 0" >> $(GEN_ROOTFS_FILELIST)
 	@cd $(MODULE_OUTPUT) && find ! -path . -type d | sed 's/\.\(.*\)/dir \1 755 0 0/g' >> $(GEN_ROOTFS_FILELIST)
