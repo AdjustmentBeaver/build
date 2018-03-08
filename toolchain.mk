@@ -33,9 +33,11 @@ endef
 toolchains: $(AARCH32_PATH) $(AARCH64_PATH)
 
 $(AARCH32_PATH):
+	mkdir -p $(TOOLCHAIN_ROOT)
 	$(call dltc,$(AARCH32_PATH),$(SRC_AARCH32_GCC),$(AARCH32_GCC_VERSION))
 
 $(AARCH64_PATH):
+	mkdir -p $(TOOLCHAIN_ROOT)
 	$(call dltc,$(AARCH64_PATH),$(SRC_AARCH64_GCC),$(AARCH64_GCC_VERSION))
 
 .PHONY: toolchains-clean
