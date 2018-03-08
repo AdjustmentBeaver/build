@@ -18,28 +18,30 @@ ARM_TF_OUT		?= $(ARM_TF_PATH)/build/rpi3/debug
 ARM_TF_BIN		?= $(ARM_TF_OUT)/bl31.bin
 ARM_TF_TMP		?= $(ARM_TF_OUT)/bl31.tmp
 ARM_TF_HEAD		?= $(ARM_TF_OUT)/bl31.head
-ARM_TF_BOOT             ?= $(ARM_TF_OUT)/optee.bin
+ARM_TF_BOOT		?= $(ARM_TF_OUT)/optee.bin
 
-U-BOOT_PATH		?= $(ROOT)/u-boot
-U-BOOT_BIN		?= $(U-BOOT_PATH)/u-boot.bin
-U-BOOT_RPI_BIN		?= $(U-BOOT_PATH)/u-boot-rpi.bin
+U-BOOT_PATH			?= $(ROOT)/u-boot
+U-BOOT_BIN			?= $(U-BOOT_PATH)/u-boot.bin
+U-BOOT_RPI_BIN	?= $(U-BOOT_PATH)/u-boot-rpi.bin
 
-RPI3_FIRMWARE_PATH		?= $(BUILD_PATH)/rpi3/firmware
-RPI3_HEAD_BIN			?= $(ROOT)/out/head.bin
-RPI3_BOOT_CONFIG		?= $(RPI3_FIRMWARE_PATH)/config.txt
-RPI3_UBOOT_ENV			?= $(ROOT)/out/uboot.env
-RPI3_UBOOT_ENV_TXT		?= $(RPI3_FIRMWARE_PATH)/uboot.env.txt
-RPI3_STOCK_FW_PATH		?= $(ROOT)/firmware
+RPI3_FIRMWARE_PATH			?= $(BUILD_PATH)/rpi3/firmware
+RPI3_HEAD_BIN						?= $(ROOT)/out/head.bin
+RPI3_BOOT_CONFIG				?= $(RPI3_FIRMWARE_PATH)/config.txt
+RPI3_UBOOT_ENV					?= $(ROOT)/out/uboot.env
+RPI3_UBOOT_ENV_TXT			?= $(RPI3_FIRMWARE_PATH)/uboot.env.txt
+RPI3_STOCK_FW_PATH			?= $(ROOT)/firmware
 RPI3_STOCK_FW_PATH_BOOT	?= $(RPI3_STOCK_FW_PATH)/boot
-OPTEE_OS_PAGER			?= $(OPTEE_OS_PATH)/out/arm/core/tee-pager.bin
+OPTEE_OS_PAGER					?= $(OPTEE_OS_PATH)/out/arm/core/tee-pager.bin
 
-LINUX_IMAGE		?= $(LINUX_PATH)/arch/arm64/boot/Image
-LINUX_DTB		?= $(LINUX_PATH)/arch/arm64/boot/dts/broadcom/bcm2710-rpi-3-b.dtb
+LINUX_IMAGE			?= $(LINUX_PATH)/arch/arm64/boot/Image
+LINUX_DTB				?= $(LINUX_PATH)/arch/arm64/boot/dts/broadcom/bcm2710-rpi-3-b.dtb
 MODULE_OUTPUT		?= $(ROOT)/module_output
-FIT_IMAGE		?= $(ROOT)/out/fit/image.fit
+FIT_IMAGE				?= $(ROOT)/out/fit/image.fit
 
-BOOT_TARGET ?= $(ROOT)/out/boot
-BOOT_FS_FILE ?= $(ROOT)/out/boot.tar.gz
+BOOT_TARGET		?= $(ROOT)/out/boot
+BOOT_FS_FILE	?= $(ROOT)/out/boot.tar.gz
+
+PUBKEY_DTB	?= rpi3_pubkey.dtb
 
 ################################################################################
 # Targets
@@ -54,7 +56,6 @@ clean: arm-tf-clean busybox-clean u-boot-clean u-boot-rpi-bin-clean \
 	optee-os-clean optee-client-clean head-bin-clean \
 	optee-examples-clean gen-pubkey-clean u-boot-fit-clean \
 	archive-boot-clean u-boot-env-clean linux-clean xtest-clean \
-	benchmark-app-clean
 
 include toolchain.mk
 
@@ -89,16 +90,20 @@ arm-tf-clean:
 # Das U-Boot
 ################################################################################
 
-U-BOOT_EXPORTS ?= CROSS_COMPILE=$(LEGACY_AARCH64_CROSS_COMPILE) ARCH=arm64 EXT_DTB=$(LINUX_DTB)
+U-BOOT_DEFAULT_EXPORTS ?= CROSS_COMPILE=$(LEGACY_AARCH64_CROSS_COMPILE) ARCH=arm64
+U-BOOT_EXPORTS ?= $(U-BOOT_DEFAULT_EXPORTS) EXT_DTB=$(ROOT)/out/fit/$(PUBKEY_DTB)
+
+.PHONY: u-boot-tools
+u-boot-tools: $(RPI3_HEAD_BIN)
+	$(U-BOOT_DEFAULT_EXPORTS) $(MAKE) -C $(U-BOOT_PATH) tools
 
 .PHONY: u-boot
-u-boot: $(RPI3_HEAD_BIN)
+u-boot: u-boot-tools
 	$(U-BOOT_EXPORTS) $(MAKE) -C $(U-BOOT_PATH) rpi_3_defconfig
 	$(U-BOOT_EXPORTS) $(MAKE) -C $(U-BOOT_PATH) all
-	$(U-BOOT_EXPORTS) $(MAKE) -C $(U-BOOT_PATH) tools
 
 u-boot-clean:
-	$(U-BOOT_EXPORTS) $(MAKE) -C $(U-BOOT_PATH) clean
+	$(U-BOOT_DEFAULT_EXPORTS) $(MAKE) -C $(U-BOOT_PATH) clean
 
 u-boot-rpi-bin: $(RPI3_UBOOT_ENV) u-boot
 	cd $(U-BOOT_PATH) && cat $(RPI3_HEAD_BIN) $(U-BOOT_BIN) > $(U-BOOT_RPI_BIN)
@@ -129,7 +134,8 @@ gen-pubkey:
 gen-pubkey-clean:
 		rm -rf $(ROOT)/out/keys
 
-u-boot-fit: u-boot $(LINUX_IMAGE) $(ARM_TF_BOOT) $(LINUX_DTB)
+.PHONY: u-boot-fit
+u-boot-fit: u-boot-tools $(LINUX_IMAGE) $(ARM_TF_BOOT) $(LINUX_DTB)
 	mkdir -p $(ROOT)/out/fit
 	cd $(ROOT)/out/fit && ln -sf $(LINUX_IMAGE) && ln -sf $(ARM_TF_BOOT) && ln -sf $(LINUX_DTB) && ln -sf $(RPI3_FIRMWARE_PATH)/rpi3_fit.its && cp $(LINUX_DTB) rpi3_pubkey.dtb
 	cd $(ROOT)/out/fit && $(U-BOOT_PATH)/tools/mkimage -f rpi3_fit.its -K rpi3_pubkey.dtb -k keys -r image.fit
@@ -153,8 +159,8 @@ busybox-cleaner: busybox-cleaner-common
 ################################################################################
 LINUX_DEFCONFIG_COMMON_ARCH := arm64
 LINUX_DEFCONFIG_COMMON_FILES := \
-		$(LINUX_PATH)/arch/arm64/configs/bcmrpi3_defconfig \
-		$(CURDIR)/kconfigs/rpi3.conf
+	$(LINUX_PATH)/arch/arm64/configs/bcmrpi3_defconfig \
+	$(CURDIR)/kconfigs/rpi3.conf
 
 linux-defconfig: $(LINUX_PATH)/.config
 
