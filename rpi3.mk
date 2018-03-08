@@ -135,7 +135,7 @@ gen-pubkey-clean:
 		rm -rf $(ROOT)/out/keys
 
 .PHONY: u-boot-fit
-u-boot-fit: u-boot-tools $(LINUX_IMAGE) $(ARM_TF_BOOT) $(LINUX_DTB)
+u-boot-fit: u-boot-tools linux arm-tf
 	mkdir -p $(ROOT)/out/fit
 	cd $(ROOT)/out/fit && ln -sf $(LINUX_IMAGE) && ln -sf $(ARM_TF_BOOT) && ln -sf $(LINUX_DTB) && ln -sf $(RPI3_FIRMWARE_PATH)/rpi3_fit.its && cp $(LINUX_DTB) rpi3_pubkey.dtb
 	cd $(ROOT)/out/fit && $(U-BOOT_PATH)/tools/mkimage -f rpi3_fit.its -K rpi3_pubkey.dtb -k keys -r image.fit
