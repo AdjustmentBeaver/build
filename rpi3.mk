@@ -20,8 +20,7 @@ clean: arm-tf-clean busybox-clean u-boot-clean optee-os-clean \
 # Root FS
 ################################################################################
 .PHONY: filelist-tee
-filelist-tee: linux fl:=$(GEN_ROOTFS_FILELIST)
-filelist-tee: optee-client xtest
+filelist-tee: linux fl:=$(GEN_ROOTFS_FILELIST) optee-client xtest
 	@echo "# filelist-tee /start" 				> $(fl)
 	@echo "dir /lib/optee_armtz 755 0 0" 				>> $(fl)
 	@if [ -e $(OPTEE_EXAMPLES_PATH)/out/ca ]; then \
@@ -75,10 +74,7 @@ filelist-tee: optee-client xtest
 	@cd $(MODULE_OUTPUT) && find -type f | sed "s|\.\(.*\)|file \1 $(MODULE_OUTPUT)\1 755 0 0|g" >> $(GEN_ROOTFS_FILELIST)
 	@echo "# filelist-tee /end"				>> $(fl)
 
-update_rootfs: arm-tf u-boot
-update_rootfs: update_rootfs-common
-
-update_rootfs: busybox filelist-tee
+update_rootfs: arm-tf busybox filelist-tee
 	cat $(GEN_ROOTFS_PATH)/filelist-final.txt > $(GEN_ROOTFS_PATH)/filelist.tmp
 	cat $(GEN_ROOTFS_FILELIST) >> $(GEN_ROOTFS_PATH)/filelist.tmp
 	cd $(GEN_ROOTFS_PATH) && \
@@ -120,6 +116,9 @@ archive-boot: u-boot
 archive-boot-clean:
 	rm -rf $(BOOT_TARGET) && rm -rf $(BOOT_FS_FILE)
 
+################################################################################
+# SD Card creation help
+################################################################################
 # Creating images etc, could wipe out a drive on the system, therefore we don't
 # want to automate that in script or make target. Instead we just simply provide
 # the steps here.
