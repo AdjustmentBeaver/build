@@ -149,6 +149,7 @@ RPI3_UBOOT_ENV_TXT			?= $(RPI3_FIRMWARE_PATH)/uboot.env.txt
 RPI3_STOCK_FW_PATH			?= $(ROOT)/firmware
 RPI3_STOCK_FW_PATH_BOOT	?= $(RPI3_STOCK_FW_PATH)/boot
 OPTEE_OS_PAGER					?= $(OPTEE_OS_PATH)/out/arm/core/tee-pager.bin
+RPI3_DTB								?= $(RPI3_STOCK_FW_PATH_BOOT)/bcm2710-rpi-3-b.dtb
 
 LINUX_IMAGE			?= $(LINUX_PATH)/arch/arm64/boot/Image
 LINUX_DTB				?= $(LINUX_PATH)/arch/arm64/boot/dts/broadcom/bcm2710-rpi-3-b.dtb

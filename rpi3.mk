@@ -14,12 +14,12 @@ ifeq ($(CFG_TEE_BENCHMARK),y)
 all: benchmark-app
 clean: benchmark-app-clean
 endif
-all: toolchains arm-tf optee-os optee-client xtest u-boot u-boot-rpi-bin\
-	linux gen-pubkey u-boot-fit update_rootfs optee-examples archive-boot
-clean: arm-tf-clean busybox-clean u-boot-clean u-boot-rpi-bin-clean \
-	optee-os-clean optee-client-clean head-bin-clean \
-	optee-examples-clean gen-pubkey-clean u-boot-fit-clean \
-	archive-boot-clean u-boot-env-clean linux-clean xtest-clean \
+all: toolchains arm-tf optee-os optee-client xtest u-boot \
+	linux gen-pubkey update_rootfs optee-examples archive-boot
+clean: arm-tf-clean busybox-clean u-boot-clean \
+	optee-os-clean optee-client-clean \
+	optee-examples-clean gen-pubkey-clean \
+	archive-boot-clean linux-clean xtest-clean \
 
 ################################################################################
 # Busybox
@@ -73,7 +73,7 @@ filelist-tee: filelist-tee-common
 	@cd $(MODULE_OUTPUT) && find -type f | sed "s|\.\(.*\)|file \1 $(MODULE_OUTPUT)\1 755 0 0|g" >> $(GEN_ROOTFS_FILELIST)
 
 .PHONY: archive-boot
-archive-boot: u-boot-fit
+archive-boot: u-boot
 	mkdir -p $(BOOT_TARGET)
 	cd $(BOOT_TARGET) && \
 		ln -sf $(RPI3_BOOT_CONFIG) && \
