@@ -53,7 +53,7 @@ u-boot-mkimage: $(U-BOOT_MKIMAGE)
 	@echo "U-Boot: Tools compiled"
 
 ### Generate U-Boot env
-$(RPI3_UBOOT_ENV): $(RPI3_UBOOT_ENV_TXT) u-boot
+$(RPI3_UBOOT_ENV): $(RPI3_UBOOT_ENV_TXT) u-boot-mkimage
 	mkdir -p $(ROOT)/out
 	$(U-BOOT_MKENVIMAGE) -s 0x4000 -o $(RPI3_UBOOT_ENV) $(RPI3_UBOOT_ENV_TXT)
 
