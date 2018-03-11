@@ -2,7 +2,6 @@
 # U-Boot
 ################################################################################
 include head.mk
-include common.mk
 
 U-BOOT_PATH				?= $(ROOT)/u-boot
 U-BOOT_BIN				?= $(U-BOOT_PATH)/u-boot.bin
