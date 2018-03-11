@@ -35,10 +35,6 @@ busybox-cleaner-common:
 ################################################################################
 # Linux
 ################################################################################
-ifeq ($(CFG_TEE_BENCHMARK),y)
-LINUX_DEFCONFIG_BENCH ?= $(CURDIR)/kconfigs/tee_bench.conf
-endif
-
 LINUX_COMMON_FLAGS ?= LOCALVERSION= CROSS_COMPILE=$(CROSS_COMPILE_NS_KERNEL)
 
 linux-common: linux-defconfig
@@ -65,103 +61,6 @@ linux-cleaner-common: linux-defconfig-clean
 	$(MAKE) -C $(LINUX_PATH) $(LINUX_CLEANER_COMMON_FLAGS) distclean
 
 ################################################################################
-# OP-TEE
-################################################################################
-OPTEE_OS_COMMON_FLAGS ?= \
-	$(OPTEE_OS_COMMON_EXTRA_FLAGS) \
-	CROSS_COMPILE=$(CROSS_COMPILE_S_USER) \
-	CROSS_COMPILE_core=$(CROSS_COMPILE_S_KERNEL) \
-	CROSS_COMPILE_ta_arm64=$(AARCH64_CROSS_COMPILE) \
-	CROSS_COMPILE_ta_arm32=$(AARCH32_CROSS_COMPILE) \
-	CFG_TEE_CORE_LOG_LEVEL=$(CFG_TEE_CORE_LOG_LEVEL) \
-	DEBUG=$(DEBUG) \
-	CFG_TEE_BENCHMARK=$(CFG_TEE_BENCHMARK)
-
-optee-os-common:
-	$(MAKE) -C $(OPTEE_OS_PATH) $(OPTEE_OS_COMMON_FLAGS)
-
-OPTEE_OS_CLEAN_COMMON_FLAGS ?= $(OPTEE_OS_COMMON_EXTRA_FLAGS)
-
-.PHONY: optee-os-clean-common
-ifeq ($(CFG_TEE_BENCHMARK),y)
-optee-os-clean-common: benchmark-app-clean-common
-endif
-optee-os-clean-common: xtest-clean optee-examples-clean
-	$(MAKE) -C $(OPTEE_OS_PATH) $(OPTEE_OS_CLEAN_COMMON_FLAGS) clean
-
-OPTEE_CLIENT_COMMON_FLAGS ?= CROSS_COMPILE=$(CROSS_COMPILE_NS_USER) \
-	CFG_TEE_BENCHMARK=$(CFG_TEE_BENCHMARK) \
-
-optee-client-common:
-	$(MAKE) -C $(OPTEE_CLIENT_PATH) $(OPTEE_CLIENT_COMMON_FLAGS)
-
-# OPTEE_CLIENT_CLEAN_COMMON_FLAGS can be defined in specific makefiles
-# (hikey.mk,...) if necessary
-
-.PHONY: optee-client-clean-common
-optee-client-clean-common:
-	$(MAKE) -C $(OPTEE_CLIENT_PATH) $(OPTEE_CLIENT_CLEAN_COMMON_FLAGS) \
-		clean
-
-################################################################################
-# xtest / optee_test
-################################################################################
-XTEST_COMMON_FLAGS ?= CROSS_COMPILE_HOST=$(CROSS_COMPILE_NS_USER)\
-	CROSS_COMPILE_TA=$(CROSS_COMPILE_S_USER) \
-	TA_DEV_KIT_DIR=$(OPTEE_OS_TA_DEV_KIT_DIR) \
-	OPTEE_CLIENT_EXPORT=$(OPTEE_CLIENT_EXPORT) \
-	COMPILE_NS_USER=$(COMPILE_NS_USER) \
-	O=$(OPTEE_TEST_OUT_PATH)
-
-xtest-common: optee-os optee-client
-	$(MAKE) -C $(OPTEE_TEST_PATH) $(XTEST_COMMON_FLAGS)
-
-XTEST_CLEAN_COMMON_FLAGS ?= O=$(OPTEE_TEST_OUT_PATH) \
-	TA_DEV_KIT_DIR=$(OPTEE_OS_TA_DEV_KIT_DIR) \
-
-.PHONY: xtest-clean-common
-xtest-clean-common:
-	$(MAKE) -C $(OPTEE_TEST_PATH) $(XTEST_CLEAN_COMMON_FLAGS) clean
-
-XTEST_PATCH_COMMON_FLAGS ?= $(XTEST_COMMON_FLAGS)
-
-xtest-patch-common:
-	$(MAKE) -C $(OPTEE_TEST_PATH) $(XTEST_PATCH_COMMON_FLAGS) patch
-
-################################################################################
-# sample applications / optee_examples
-################################################################################
-OPTEE_EXAMPLES_COMMON_FLAGS ?= HOST_CROSS_COMPILE=$(CROSS_COMPILE_NS_USER)\
-	TA_CROSS_COMPILE=$(CROSS_COMPILE_S_USER) \
-	TA_DEV_KIT_DIR=$(OPTEE_OS_TA_DEV_KIT_DIR) \
-	TEEC_EXPORT=$(OPTEE_CLIENT_EXPORT)
-
-optee-examples-common: optee-os optee-client
-	$(MAKE) -C $(OPTEE_EXAMPLES_PATH) $(OPTEE_EXAMPLES_COMMON_FLAGS)
-
-OPTEE_EXAMPLES_CLEAN_COMMON_FLAGS ?= TA_DEV_KIT_DIR=$(OPTEE_OS_TA_DEV_KIT_DIR)
-
-.PHONY: optee-examples-clean-common
-optee-examples-clean-common:
-	$(MAKE) -C $(OPTEE_EXAMPLES_PATH) \
-			$(OPTEE_EXAMPLES_CLEAN_COMMON_FLAGS) clean
-
-################################################################################
-# benchmark_app
-################################################################################
-BENCHMARK_APP_COMMON_FLAGS ?= CROSS_COMPILE=$(CROSS_COMPILE_NS_USER) \
-	TEEC_EXPORT=$(OPTEE_CLIENT_EXPORT) \
-	TEEC_INTERNAL_INCLUDES=$(OPTEE_CLIENT_PATH)/libteec \
-	MULTIARCH=$(MULTIARCH)
-
-benchmark-app-common: optee-os optee-client
-	$(MAKE) -C $(BENCHMARK_APP_PATH) $(BENCHMARK_APP_COMMON_FLAGS)
-
-.PHONY: benchmark-app-clean-common
-benchmark-app-clean-common:
-	$(MAKE) -C $(BENCHMARK_APP_PATH) clean
-
-################################################################################
 # rootfs
 ################################################################################
 update_rootfs-common: busybox filelist-tee
@@ -178,9 +77,6 @@ update_rootfs-clean-common:
 	rm -f $(GEN_ROOTFS_PATH)/filelist-tmp.txt
 	rm -f $(GEN_ROOTFS_FILELIST)
 
-ifeq ($(CFG_TEE_BENCHMARK),y)
-filelist-tee-common: benchmark-app
-endif
 filelist-tee-common: fl:=$(GEN_ROOTFS_FILELIST)
 filelist-tee-common: optee-client xtest optee-examples
 	@echo "# filelist-tee-common /start" 				> $(fl)
@@ -203,14 +99,6 @@ filelist-tee-common: optee-client xtest optee-examples
 	@find $(OPTEE_TEST_OUT_PATH) -name "*.ta" | \
 		sed 's/\(.*\)\/\(.*\)/file \/lib\/optee_armtz\/\2 \1\/\2 444 0 0/g' \
 									>> $(fl)
-	@if [ -e $(BENCHMARK_APP_OUT)/benchmark ]; then \
-		echo "file /bin/benchmark" \
-			"$(BENCHMARK_APP_OUT)/benchmark 755 0 0"	>> $(fl); \
-		echo "slink /lib/libyaml-0.so.2 libyaml-0.so.2.0.5 755 0 0" \
-									>> $(fl); \
-		echo "file /lib/libyaml-0.so.2.0.5 $(LIBYAML_LIB_OUT)/libyaml-0.so.2.0.5 755 0 0" \
-									>> $(fl); \
-	fi
 	@echo "# Secure storage dir" 					>> $(fl)
 	@echo "dir /data 755 0 0" 					>> $(fl)
 	@echo "dir /data/tee 755 0 0" 					>> $(fl)

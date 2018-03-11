@@ -10,16 +10,11 @@ include uboot.mk
 ################################################################################
 # Targets
 ################################################################################
-ifeq ($(CFG_TEE_BENCHMARK),y)
-all: benchmark-app
-clean: benchmark-app-clean
-endif
 all: toolchains arm-tf optee-os optee-client xtest u-boot \
-	linux gen-pubkey update_rootfs optee-examples archive-boot
-clean: arm-tf-clean busybox-clean u-boot-clean \
-	optee-os-clean optee-client-clean \
-	optee-examples-clean gen-pubkey-clean \
-	archive-boot-clean linux-clean xtest-clean \
+	linux gen-pubkey update_rootfs archive-boot
+clean: arm-tf-clean busybox-clean u-boot-clean optee-os-clean \
+	optee-client-clean gen-pubkey-clean archive-boot-clean \
+	linux-clean xtest-clean
 
 ################################################################################
 # Busybox
@@ -34,6 +29,7 @@ busybox-clean: busybox-clean-common
 
 .PHONY: busybox-cleaner
 busybox-cleaner: busybox-cleaner-common
+
 ################################################################################
 # Linux kernel
 ################################################################################

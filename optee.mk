@@ -4,6 +4,66 @@
 include head.mk
 include common.mk
 
+################################################################################
+# OP-TEE
+################################################################################
+ OPTEE_OS_FLAGS ?= \
+	$(OPTEE_OS_EXTRA_FLAGS) \
+	CROSS_COMPILE=$(CROSS_COMPILE_S_USER) \
+	CROSS_COMPILE_core=$(CROSS_COMPILE_S_KERNEL) \
+	CROSS_COMPILE_ta_arm64=$(AARCH64_CROSS_COMPILE) \
+	CROSS_COMPILE_ta_arm32=$(AARCH32_CROSS_COMPILE) \
+	CFG_TEE_CORE_LOG_LEVEL=$(CFG_TEE_CORE_LOG_LEVEL) \
+	DEBUG=$(DEBUG) \
+	PLATFORM=rpi3
+
+OPTEE_OS_CLEAN_FLAGS ?= $(OPTEE_OS_EXTRA_FLAGS) PLATFORM=rpi3
+
+OPTEE_CLIENT_FLAGS ?= CROSS_COMPILE=$(CROSS_COMPILE_NS_USER)
+
+optee-os: toolchains
+	$(MAKE) -C $(OPTEE_OS_PATH) $(OPTEE_OS_FLAGS)
+
+.PHONY: optee-os-clean
+optee-os-clean: xtest-clean
+	$(MAKE) -C $(OPTEE_OS_PATH) $(OPTEE_OS_CLEAN_FLAGS) clean
+
+optee-client: toolchains
+	$(MAKE) -C $(OPTEE_CLIENT_PATH) $(OPTEE_CLIENT_FLAGS)
+
+.PHONY: optee-client-clean
+optee-client-clean:
+	$(MAKE) -C $(OPTEE_CLIENT_PATH) $(OPTEE_CLIENT_CLEAN_FLAGS) \
+		clean
+
+################################################################################
+# xtest / optee_test
+################################################################################
+XTEST_FLAGS ?= CROSS_COMPILE_HOST=$(CROSS_COMPILE_NS_USER)\
+	CROSS_COMPILE_TA=$(CROSS_COMPILE_S_USER) \
+	TA_DEV_KIT_DIR=$(OPTEE_OS_TA_DEV_KIT_DIR) \
+	OPTEE_CLIENT_EXPORT=$(OPTEE_CLIENT_EXPORT) \
+	COMPILE_NS_USER=$(COMPILE_NS_USER) \
+	O=$(OPTEE_TEST_OUT_PATH)
+
+XTEST_CLEAN_FLAGS ?= O=$(OPTEE_TEST_OUT_PATH) \
+	TA_DEV_KIT_DIR=$(OPTEE_OS_TA_DEV_KIT_DIR) \
+
+XTEST_PATCH_FLAGS ?= $(XTEST_FLAGS)
+
+xtest: optee-os optee-client
+	$(MAKE) -C $(OPTEE_TEST_PATH) $(XTEST_FLAGS)
+
+.PHONY: xtest-clean-common
+xtest-clean:
+	$(MAKE) -C $(OPTEE_TEST_PATH) $(XTEST_CLEAN_FLAGS) clean
+
+xtest-patch:
+	$(MAKE) -C $(OPTEE_TEST_PATH) $(XTEST_PATCH_FLAGS) patch
+
+################################################################################
+# ARM Trusted Firmware
+################################################################################
 ARM_TF_PATH		?= $(ROOT)/arm-trusted-firmware
 ARM_TF_OUT		?= $(ARM_TF_PATH)/build/rpi3/debug
 ARM_TF_BIN		?= $(ARM_TF_OUT)/bl31.bin
@@ -11,9 +71,6 @@ ARM_TF_TMP		?= $(ARM_TF_OUT)/bl31.tmp
 ARM_TF_HEAD		?= $(ARM_TF_OUT)/bl31.head
 ARM_TF_BOOT		?= $(ARM_TF_OUT)/optee.bin
 
-################################################################################
-# ARM Trusted Firmware
-################################################################################
 ARM_TF_EXPORTS ?= \
 	CROSS_COMPILE="$(CCACHE)$(AARCH64_CROSS_COMPILE)"
 
@@ -38,44 +95,3 @@ arm-tf: optee-os
 .PHONY: arm-tf-clean
 arm-tf-clean:
 	$(ARM_TF_EXPORTS) $(MAKE) -C $(ARM_TF_PATH) $(ARM_TF_FLAGS) clean
-
-################################################################################
-# OP-TEE
-################################################################################
-OPTEE_OS_COMMON_FLAGS += PLATFORM=rpi3
-optee-os: optee-os-common
-
-OPTEE_OS_CLEAN_COMMON_FLAGS += PLATFORM=rpi3
-.PHONY: optee-os-clean
-optee-os-clean: optee-os-clean-common
-
-optee-client: optee-client-common
-
-.PHONY: optee-client-clean
-optee-client-clean: optee-client-clean-common
-
-################################################################################
-# xtest / optee_test
-################################################################################
-xtest: xtest-common
-
-.PHONY: xtest-clean
-xtest-clean: xtest-clean-common
-
-xtest-patch: xtest-patch-common
-
-################################################################################
-# Sample applications / optee_examples
-################################################################################
-optee-examples: optee-examples-common
-
-.PHONY: optee-examples-clean
-optee-examples-clean: optee-examples-clean-common
-
-################################################################################
-# benchmark
-################################################################################
-benchmark-app: benchmark-app-common
-
-.PHONY: benchmark-app-clean
-benchmark-app-clean: benchmark-app-clean-common

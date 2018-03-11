@@ -27,15 +27,9 @@ OPTEE_CLIENT_EXPORT		?= $(OPTEE_CLIENT_PATH)/out/export
 OPTEE_TEST_PATH			?= $(ROOT)/optee_test
 OPTEE_TEST_OUT_PATH		?= $(ROOT)/optee_test/out
 OPTEE_EXAMPLES_PATH		?= $(ROOT)/optee_examples
-BENCHMARK_APP_PATH		?= $(ROOT)/optee_benchmark
-BENCHMARK_APP_OUT		?= $(BENCHMARK_APP_PATH)/out
-LIBYAML_LIB_OUT			?= $(BENCHMARK_APP_OUT)/libyaml/out/lib
 
 # default high verbosity. slow uarts shall specify lower if prefered
 CFG_TEE_CORE_LOG_LEVEL		?= 3
-
-# default disable latency benchmarks (over all OP-TEE layers)
-CFG_TEE_BENCHMARK		?= n
 
 CCACHE ?= $(shell which ccache) # Don't remove this comment (space is needed)
 
@@ -86,7 +80,7 @@ endif
 endif
 
 ifneq ($(COMPILE_S_KERNEL),)
-OPTEE_OS_COMMON_EXTRA_FLAGS ?= O=out/arm
+OPTEE_OS_EXTRA_FLAGS ?= O=out/arm
 OPTEE_OS_BIN		    ?= $(OPTEE_OS_PATH)/out/arm/core/tee.bin
 OPTEE_OS_HEADER_V2_BIN	    ?= $(OPTEE_OS_PATH)/out/arm/core/tee-header_v2.bin
 OPTEE_OS_PAGER_V2_BIN	    ?= $(OPTEE_OS_PATH)/out/arm/core/tee-pager_v2.bin
@@ -122,7 +116,7 @@ OPTEE_OS_TA_DEV_KIT_DIR	?= $(OPTEE_OS_PATH)/out/arm/export-ta_arm64
 endif
 
 ifeq ($(COMPILE_S_KERNEL),64)
-OPTEE_OS_COMMON_EXTRA_FLAGS	+= CFG_ARM64_core=y
+OPTEE_OS_EXTRA_FLAGS	+= CFG_ARM64_core=y
 endif
 
 
