@@ -65,20 +65,6 @@ u-boot-env: $(RPI3_UBOOT_ENV)
 u-boot-env-clean:
 	rm -rf $(RPI3_UBOOT_ENV)
 
-### Generate U-Boot binaries
-$(U-BOOT_RPI_BIN): u-boot-mkimage u-boot-env gen-pubkey
-	$(U-BOOT_EXPORTS) $(MAKE) -C $(U-BOOT_PATH) rpi_3_defconfig
-	$(U-BOOT_EXPORTS) $(MAKE) -C $(U-BOOT_PATH) all
-	cd $(U-BOOT_PATH); cat $(RPI3_HEAD_BIN) $(U-BOOT_BIN) > $(U-BOOT_RPI_BIN)
-
-.PHONY: u-boot-rpi-bin
-u-boot-rpi-bin: $(U-BOOT_RPI_BIN)
-	@echo "U-Boot: RPi binaries compiled"
-
-.PHONY: u-boot-rpi-bin-clean
-u-boot-rpi-bin-clean:
-	rm -f $(U-BOOT_RPI_BIN)
-
 ### Generate FIT image
 u-boot-fit: u-boot-mkimage linux arm-tf gen-pubkey
 	mkdir -p $(ROOT)/out/fit
@@ -91,9 +77,23 @@ u-boot-fit: u-boot-mkimage linux arm-tf gen-pubkey
 u-boot-fit-clean:
 	rm -rf $(ROOT)/out/fit
 
+### Generate U-Boot binaries
+$(U-BOOT_RPI_BIN): u-boot-fit
+	$(U-BOOT_EXPORTS) $(MAKE) -C $(U-BOOT_PATH) rpi_3_defconfig
+	$(U-BOOT_EXPORTS) $(MAKE) -C $(U-BOOT_PATH) all
+	cd $(U-BOOT_PATH); cat $(RPI3_HEAD_BIN) $(U-BOOT_BIN) > $(U-BOOT_RPI_BIN)
+
+.PHONY: u-boot-rpi-bin
+u-boot-rpi-bin: $(U-BOOT_RPI_BIN)
+	@echo "U-Boot: RPi binaries compiled"
+
+.PHONY: u-boot-rpi-bin-clean
+u-boot-rpi-bin-clean:
+	rm -f $(U-BOOT_RPI_BIN)
+
 ### Target for U-Boot binaries and tools
 .PHONY: u-boot
-u-boot: u-boot-rpi-bin u-boot-fit
+u-boot: u-boot-rpi-bin
 	@echo "U-Boot: Finished compiling U-Boot"
 
 .PHONY: u-boot-clean
