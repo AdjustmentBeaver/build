@@ -1,6 +1,8 @@
 ifndef HEAD_INCLUDED
 HEAD_INCLUDED = 1
 
+all: ;
+
 ################################################################################
 # Following variables defines how the NS_USER (Non Secure User - Client
 # Application), NS_KERNEL (Non Secure Kernel), S_KERNEL (Secure Kernel) and
@@ -17,7 +19,9 @@ SHELL := bash
 BASH ?= bash
 
 BUILD_PATH			?= $(ROOT)/build
-LINUX_PATH			?= $(ROOT)/linux
+#LINUX_PATH			?= $(ROOT)/linux
+BUILDROOT_PATH			?=$(ROOT)/buildroot
+OVERLAY_PATH			?=$(BUILDROOT_PATH)/overlay
 OPTEE_GENDRV_MODULE		?= $(LINUX_PATH)/drivers/tee/optee/optee.ko
 GEN_ROOTFS_PATH			?= $(ROOT)/gen_rootfs
 GEN_ROOTFS_FILELIST		?= $(GEN_ROOTFS_PATH)/filelist-tee.txt
@@ -123,9 +127,9 @@ endif
 ################################################################################
 # defines, macros, configuration etc
 ################################################################################
-define KERNEL_VERSION
-$(shell cd $(LINUX_PATH) && $(MAKE) --no-print-directory kernelversion)
-endef
+#define KERNEL_VERSION
+#$(shell cd $(LINUX_PATH) && $(MAKE) --no-print-directory kernelversion)
+#endef
 
 # Read stdin, expand ${VAR} environment variables, output to stdout
 # http://superuser.com/a/302847
@@ -145,13 +149,13 @@ RPI3_STOCK_FW_PATH_BOOT	?= $(RPI3_STOCK_FW_PATH)/boot
 OPTEE_OS_PAGER					?= $(OPTEE_OS_PATH)/out/arm/core/tee-pager.bin
 RPI3_DTB								?= $(RPI3_STOCK_FW_PATH_BOOT)/bcm2710-rpi-3-b.dtb
 
-LINUX_IMAGE			?= $(LINUX_PATH)/arch/arm64/boot/Image
-LINUX_DTB				?= $(LINUX_PATH)/arch/arm64/boot/dts/broadcom/bcm2710-rpi-3-b.dtb
+LINUX_IMAGE			?= $(BUILDROOT_PATH)/output/images/Image
+LINUX_DTB			?= $(BUILDROOT_PATH)/output/images/bcm2710-rpi-3-b.dtb
 MODULE_OUTPUT		?= $(ROOT)/module_output
 FIT_IMAGE				?= $(ROOT)/out/fit/image.fit
 
 BOOT_TARGET		?= $(ROOT)/out/boot
-BOOT_FS_FILE	?= $(ROOT)/out/boot.tar.gz
+BOOT_FS_FILE	?= $(ROOT)/out/boot.tar
 
 PUBKEY_DTB	?= rpi3_pubkey.dtb
 

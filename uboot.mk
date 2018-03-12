@@ -65,7 +65,7 @@ u-boot-env-clean:
 	rm -rf $(RPI3_UBOOT_ENV)
 
 ### Generate FIT image
-u-boot-fit: u-boot-mkimage linux arm-tf gen-pubkey
+u-boot-fit: u-boot-mkimage buildroot arm-tf gen-pubkey
 	mkdir -p $(ROOT)/out/fit
 	cd $(ROOT)/out/fit; \
 	 ln -sf $(LINUX_IMAGE); ln -sf $(ARM_TF_BOOT); ln -sf $(LINUX_DTB); ln -sf $(RPI3_FIRMWARE_PATH)/rpi3_fit.its; cp $(LINUX_DTB) rpi3_pubkey.dtb; \
@@ -92,7 +92,7 @@ u-boot-rpi-bin-clean:
 
 ### Target for U-Boot binaries and tools
 .PHONY: u-boot
-u-boot: u-boot-rpi-bin
+u-boot: u-boot-rpi-bin u-boot-env
 	@echo "U-Boot: Finished compiling U-Boot"
 
 .PHONY: u-boot-clean

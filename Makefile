@@ -5,89 +5,15 @@ include head.mk
 include toolchain.mk
 include optee.mk
 include uboot.mk
-include linux.mk
 
 ################################################################################
 # Targets
 ################################################################################
 all: toolchains arm-tf optee-os optee-client xtest u-boot \
-	linux gen-pubkey update_rootfs archive-boot
+	gen-pubkey archive-boot
 clean: arm-tf-clean busybox-clean u-boot-clean optee-os-clean \
 	optee-client-clean gen-pubkey-clean archive-boot-clean \
 	linux-clean xtest-clean update_rootfs-clean
-
-################################################################################
-# Root FS
-################################################################################
-.PHONY: filelist-tee
-filelist-tee: fl:=$(GEN_ROOTFS_FILELIST)
-filelist-tee: linux $(FILELIST_TEE) optee-client xtest
-	@echo "# filelist-tee /start" 				> $(fl)
-	@echo "dir /lib/optee_armtz 755 0 0" 				>> $(fl)
-	@if [ -e $(OPTEE_EXAMPLES_PATH)/out/ca ]; then \
-		for file in $(OPTEE_EXAMPLES_PATH)/out/ca/*; do \
-			echo "file /usr/bin/$$(basename $$file)" \
-			"$$file 755 0 0"				>> $(fl); \
-		done; \
-	fi
-	@if [ -e $(OPTEE_EXAMPLES_PATH)/out/ta ]; then \
-		for file in $(OPTEE_EXAMPLES_PATH)/out/ta/*; do \
-			echo "file /lib/optee_armtz/$$(basename $$file)" \
-			"$$file 755 0 0"				>> $(fl); \
-		done; \
-	fi
-	@echo "# xtest / optee_test" 					>> $(fl)
-	@find $(OPTEE_TEST_OUT_PATH) -type f -name "xtest" | \
-		sed 's/\(.*\)/file \/bin\/xtest \1 755 0 0/g' 		>> $(fl)
-	@find $(OPTEE_TEST_OUT_PATH) -name "*.ta" | \
-		sed 's/\(.*\)\/\(.*\)/file \/lib\/optee_armtz\/\2 \1\/\2 444 0 0/g' \
-									>> $(fl)
-	@echo "# Secure storage dir" 					>> $(fl)
-	@echo "dir /data 755 0 0" 					>> $(fl)
-	@echo "dir /data/tee 755 0 0" 					>> $(fl)
-	@if [ -e $(OPTEE_GENDRV_MODULE) ]; then \
-		echo "# OP-TEE device" 					>> $(fl); \
-		echo "dir /lib/modules 755 0 0" 			>> $(fl); \
-		echo "dir /lib/modules/$(call KERNEL_VERSION) 755 0 0" \
-									>> $(fl); \
-		echo "file /lib/modules/$(call KERNEL_VERSION)/optee.ko" \
-			"$(OPTEE_GENDRV_MODULE) 755 0 0" \
-									>> $(fl); \
-	fi
-	@echo "# OP-TEE Client" 					>> $(fl)
-	@echo "file /bin/tee-supplicant $(OPTEE_CLIENT_EXPORT)/bin/tee-supplicant 755 0 0" \
-									>> $(fl)
-	@echo "file /lib/libteec.so.1.0 $(OPTEE_CLIENT_EXPORT)/lib/libteec.so.1.0 755 0 0" \
-									>> $(fl)
-	@echo "slink /lib/libteec.so.1 libteec.so.1.0 755 0 0"			>> $(fl)
-	@echo "slink /lib/libteec.so libteec.so.1 755 0 0" 			>> $(fl)
-	@if [ -e $(OPTEE_CLIENT_EXPORT)/lib/libsqlfs.so.1.0 ]; then \
-		echo "file /lib/libsqlfs.so.1.0" \
-			"$(OPTEE_CLIENT_EXPORT)/lib/libsqlfs.so.1.0 755 0 0" \
-									>> $(fl); \
-		echo "slink /lib/libsqlfs.so.1 libsqlfs.so.1.0 755 0 0" >> $(fl); \
-		echo "slink /lib/libsqlfs.so libsqlfs.so.1 755 0 0" 	>> $(fl); \
-	fi
-	@echo "file /etc/init.d/optee $(BUILD_PATH)/init.d.optee 755 0 0"	>> $(fl)
-	@echo "slink /etc/rc.d/S09_optee /etc/init.d/optee 755 0 0"	>> $(fl)
-	@echo "dir /usr/bin 755 0 0" >> $(GEN_ROOTFS_FILELIST)
-	@cd $(MODULE_OUTPUT) && find ! -path . -type d | sed 's/\.\(.*\)/dir \1 755 0 0/g' >> $(GEN_ROOTFS_FILELIST)
-	@cd $(MODULE_OUTPUT) && find -type f | sed "s|\.\(.*\)|file \1 $(MODULE_OUTPUT)\1 755 0 0|g" >> $(GEN_ROOTFS_FILELIST)
-	@echo "# filelist-tee /end"				>> $(fl)
-
-update_rootfs: arm-tf busybox filelist-tee
-	cat $(GEN_ROOTFS_PATH)/filelist-final.txt > $(GEN_ROOTFS_PATH)/filelist.tmp
-	cat $(GEN_ROOTFS_FILELIST) >> $(GEN_ROOTFS_PATH)/filelist.tmp
-	cd $(GEN_ROOTFS_PATH) && \
-	        $(LINUX_PATH)/usr/gen_init_cpio $(GEN_ROOTFS_PATH)/filelist.tmp | \
-			gzip > $(GEN_ROOTFS_PATH)/filesystem.cpio.gz
-
-.PHONY: update_rootfs-clean
-update_rootfs-clean:
-	rm -f $(GEN_ROOTFS_PATH)/filesystem.cpio.gz
-	rm -f $(GEN_ROOTFS_PATH)/filelist-all.txt
-	rm -f $(GEN_ROOTFS_PATH)/filelist-tmp.txt
-	rm -f $(GEN_ROOTFS_FILELIST)
 
 ################################################################################
 # Boot FS
@@ -111,11 +37,52 @@ archive-boot: u-boot
 		ln -sf $(RPI3_STOCK_FW_PATH)/boot/start_db.elf && \
 		ln -sf $(RPI3_STOCK_FW_PATH)/boot/start.elf && \
 		ln -sf $(RPI3_STOCK_FW_PATH)/boot/start_x.elf
-	cd $(ROOT)/out && tar -chvzf $(BOOT_FS_FILE) boot --owner=0 --group=0 --mode=755
+	cd $(ROOT)/out/boot && tar -chvf $(BOOT_FS_FILE) . --owner=0 --group=0 --mode=755
 
 .PHONY: archive-boot-clean
 archive-boot-clean:
 	rm -rf $(BOOT_TARGET) && rm -rf $(BOOT_FS_FILE)
+
+################################################################################
+# Buildroot
+################################################################################
+
+BUILDROOT_PATH=$(ROOT)/buildroot
+OVERLAY_PATH=$(BUILDROOT_PATH)/overlay
+
+buildroot: buildroot-overlay
+	ln -sf $(BUILD_PATH)/kconfigs/rpi3.conf $(BUILDROOT_PATH)/rpi3.conf
+	sed -i 's#BR2_TOOLCHAIN_EXTERNAL_PATH="topkek"#BR2_TOOLCHAIN_EXTERNAL_PATH="$(ROOT)/toolchains/aarch64"#g' $(BUILD_PATH)/rpi3/raspberrypi3_64_custom_defconfig
+	ln -sf $(BUILD_PATH)/rpi3/raspberrypi3_64_custom_defconfig $(BUILDROOT_PATH)/configs/raspberrypi3_64_custom_defconfig
+	$(MAKE) -C $(BUILDROOT_PATH) raspberrypi3_64_custom_defconfig
+	$(MAKE) -C $(BUILDROOT_PATH)
+	ln -sf $(BUILDROOT_PATH)/output/images/rootfs.tar $(ROOT)/out
+
+buildroot-clean:
+	$(MAKE) -C $(BUILDROOT_PATH) clean
+
+################################################################################
+# Buildroot Overlay
+################################################################################
+
+buildroot-overlay:  $(OVERLAY_PATH) optee-os optee-client xtest
+	@echo Building overlay...
+	mkdir -p $(OVERLAY_PATH)/lib/optee_armtz
+	mkdir -p $(OVERLAY_PATH)/bin
+	mkdir -p $(OVERLAY_PATH)/etc/init.d
+	mkdir -p $(OVERLAY_PATH)/data
+	mkdir -p $(OVERLAY_PATH)/data/tee
+	cp $(OPTEE_TEST_OUT_PATH)/xtest/xtest $(OVERLAY_PATH)/bin/xtest
+	find $(OPTEE_TEST_OUT_PATH)/ta -name '*.ta' -exec cp {} $(OVERLAY_PATH)/lib/optee_armtz/ \;
+	cp $(OPTEE_CLIENT_EXPORT)/bin/tee-supplicant $(OVERLAY_PATH)/bin/tee-supplicant
+	cp $(OPTEE_CLIENT_EXPORT)/lib/libteec.so.1.0 $(OVERLAY_PATH)/lib/libteec.so.1.0
+	ln -sf libteec.so.1.0 $(OVERLAY_PATH)/lib/libteec.so.1
+	ln -sf libteec.so.1 $(OVERLAY_PATH)/lib/libteec.so
+	cp $(BUILD_PATH)/init.d.optee $(OVERLAY_PATH)/etc/init.d/optee
+	ln -sf optee $(OVERLAY_PATH)/etc/init.d/S09_optee
+
+buildroot-overlay-clean:
+	rm -rf $(OVERLAY_PATH)
 
 ################################################################################
 # SD Card creation help
