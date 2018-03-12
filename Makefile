@@ -11,9 +11,9 @@ include uboot.mk
 ################################################################################
 all: toolchains arm-tf optee-os optee-client xtest u-boot \
 	gen-pubkey archive-boot
-clean: arm-tf-clean busybox-clean u-boot-clean optee-os-clean \
+clean: arm-tf-clean u-boot-clean optee-os-clean \
 	optee-client-clean gen-pubkey-clean archive-boot-clean \
-	linux-clean xtest-clean update_rootfs-clean
+	xtest-clean buildroot-clean
 
 ################################################################################
 # Boot FS
@@ -65,7 +65,7 @@ buildroot-clean:
 # Buildroot Overlay
 ################################################################################
 
-buildroot-overlay:  $(OVERLAY_PATH) optee-os optee-client xtest
+buildroot-overlay: optee-os optee-client xtest
 	@echo Building overlay...
 	mkdir -p $(OVERLAY_PATH)/lib/optee_armtz
 	mkdir -p $(OVERLAY_PATH)/bin

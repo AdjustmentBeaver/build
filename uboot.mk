@@ -45,6 +45,7 @@ u-boot-head-bin-clean:
 
 ### Generate U-Boot Tools
 $(U-BOOT_MKIMAGE): u-boot-head-bin
+	$(U-BOOT_EXPORTS) $(MAKE) -C $(U-BOOT_PATH) rpi_3_defconfig
 	$(U-BOOT_DEFAULT_EXPORTS) EXT_DTB=$(RPI3_DTB) $(MAKE) -C $(U-BOOT_PATH) tools
 
 .PHONY: u-boot-mkimage
@@ -78,7 +79,6 @@ u-boot-fit-clean:
 
 ### Generate U-Boot binaries
 $(U-BOOT_RPI_BIN): u-boot-fit
-	$(U-BOOT_EXPORTS) $(MAKE) -C $(U-BOOT_PATH) rpi_3_defconfig
 	$(U-BOOT_EXPORTS) $(MAKE) -C $(U-BOOT_PATH) all
 	cd $(U-BOOT_PATH); cat $(RPI3_HEAD_BIN) $(U-BOOT_BIN) > $(U-BOOT_RPI_BIN)
 
