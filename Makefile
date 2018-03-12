@@ -20,7 +20,8 @@ clean: arm-tf-clean busybox-clean u-boot-clean optee-os-clean \
 # Root FS
 ################################################################################
 .PHONY: filelist-tee
-filelist-tee: linux fl:=$(GEN_ROOTFS_FILELIST) optee-client xtest
+FILELIST_TEE ?= fl:=$(GEN_ROOTFS_FILELIST)
+filelist-tee: linux $(FILELIST_TEE) optee-client xtest
 	@echo "# filelist-tee /start" 				> $(fl)
 	@echo "dir /lib/optee_armtz 755 0 0" 				>> $(fl)
 	@if [ -e $(OPTEE_EXAMPLES_PATH)/out/ca ]; then \
