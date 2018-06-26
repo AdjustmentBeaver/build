@@ -1,0 +1,14 @@
+config BR2_PACKAGE_KMOD_HEADER
+	bool "kmod_header"
+	default "y"
+	depends on BR2_LINUX_KERNEL
+	help
+		Dummy kernel module for kernel struct generation
+
+if BR2_PACKAGE_KMOD_HEADER
+config BR2_PACKAGE_KMOD_HEADER_SITE
+	string "Dummy kernel module path"
+	default ""
+	help
+	  The path to the source directory of the dummy kernel module
+endif

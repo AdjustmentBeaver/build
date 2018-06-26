@@ -1,0 +1,14 @@
+config BR2_PACKAGE_OPTEE_EXAMPLES
+	bool "optee_examples"
+	help
+	  http://github.org/OP-TEE/optee_examples
+
+if BR2_PACKAGE_OPTEE_EXAMPLES
+
+config BR2_PACKAGE_OPTEE_EXAMPLES_SITE
+	string "OP-TEE examples path"
+	default "https://github.org/OP-TEE/optee_examples.git"
+	help
+	  The path to the source directory of OP-TEE examples
+
+endif

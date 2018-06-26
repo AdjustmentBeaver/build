@@ -1,0 +1,14 @@
+config BR2_PACKAGE_KMOD_PSLIST
+	bool "kmod_pslist"
+	default "y"
+	depends on BR2_LINUX_KERNEL
+	help
+		Process list kernel module
+
+if BR2_PACKAGE_KMOD_PSLIST
+config BR2_PACKAGE_KMOD_PSLIST_SITE
+	string "Process list kernel module path"
+	default "https://github.com/realmoriss/kmod-pslist.git"
+	help
+	  The path to the source directory of the process list kernel module
+endif

@@ -1,0 +1,9 @@
+source "$BR2_EXTERNAL_IOT_GW_PATH/package/optee_client/Config.in"
+source "$BR2_EXTERNAL_IOT_GW_PATH/package/optee_test/Config.in"
+source "$BR2_EXTERNAL_IOT_GW_PATH/package/optee_examples/Config.in"
+source "$BR2_EXTERNAL_IOT_GW_PATH/package/optee_os/Config.in"
+
+source "$BR2_EXTERNAL_IOT_GW_PATH/package/arm_tf/Config.in"
+
+source "$BR2_EXTERNAL_IOT_GW_PATH/package/kmod_header/Config.in"
+source "$BR2_EXTERNAL_IOT_GW_PATH/package/kmod_pslist/Config.in"
