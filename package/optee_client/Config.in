@@ -1,5 +1,6 @@
 config BR2_PACKAGE_OPTEE_CLIENT
 	bool "optee_client"
+	default "y"
 	help
 	  http://github.org/OP-TEE/optee_client
 

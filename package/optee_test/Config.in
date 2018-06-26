@@ -1,6 +1,7 @@
 config BR2_PACKAGE_OPTEE_TEST
 	bool "optee_test"
 	select BR2_PACKAGE_OPTEE_CLIENT
+	default "y"
 	help
 	  http://github.org/OP-TEE/optee_test
 
